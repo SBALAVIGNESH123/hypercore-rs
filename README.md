@@ -5,16 +5,15 @@
 <h1 align="center">Hypercore</h1>
 
 <p align="center">
-  <strong>A production-grade, OpenAI-compatible LLM inference runtime built in Rust.</strong>
+  <strong>Hypercore is an OpenAI-compatible LLM inference server written in Rust.</strong>
 </p>
 
 <p align="center">
   <a href="#quickstart">Quickstart</a> •
-  <a href="#features">Features</a> •
-  <a href="#api-reference">API</a> •
-  <a href="#deployment">Deploy</a> •
-  <a href="#architecture">Architecture</a> •
-  <a href="#license">License</a>
+  <a href="#system-capabilities">Capabilities</a> •
+  <a href="#benchmarks">Benchmarks</a> •
+  <a href="#limitations">Limitations</a> •
+  <a href="#deployment">Deploy</a>
 </p>
 
 <p align="center">
@@ -26,69 +25,21 @@
 
 ---
 
-## Why Hypercore?
+- **Continuous batching** (up to 4 sessions)
+- **Hard memory + context bounds** (no silent OOMs)
+- **CPU-first**, single ~15MB binary
+- **Prometheus + OpenTelemetry** built in
+- **Drop-in replacement** for OpenAI SDK
 
-Most LLM inference runtimes (vLLM, TGI, llama.cpp server) are research-first tools retrofitted for production. Hypercore is built **production-first** from day one.
+*Best for: internal APIs, edge inference, on-prem deployments*
 
-**The problem:** You want to deploy a local LLM behind an API. You need it to be fast, safe, observable, and compatible with every tool that speaks OpenAI. Existing solutions give you speed but not safety — or safety but not speed.
-
-**Hypercore gives you both:**
-
-- 🔒 **Deterministic safety boundaries** — explicit memory pressure rejection, request timeouts, body size limits. No silent failures.
-- ⚡ **Continuous batching** — round-robin chunked prefill with bounded KV-cache slots. No queue stalling.
-- 🔌 **Drop-in OpenAI replacement** — streaming + non-streaming, ChatML templating, `/v1/models`, Bearer auth.
-- 📊 **Production observability** — Prometheus metrics, OpenTelemetry tracing, request lifecycle telemetry.
-- 🦀 **Rust** — zero-cost abstractions, no GC pauses, memory safety without a runtime.
+Hypercore is a CPU-first, OpenAI-compatible LLM inference runtime focused on deterministic scheduling, bounded resource usage, and production stability.
 
 ---
-
-## The Hypercore Advantage
-
-Hypercore is designed for teams who need **predictable, safe, observable inference** without the operational complexity of GPU clusters. If you're running models on CPU or edge devices, Hypercore is purpose-built for your use case.
-
-- **Zero-Bloat Ecosystem**: No massive Python dependency trees or gigabyte-sized installations. Just a single ~15MB statically linked Rust binary.
-- **Immediate Cold Starts**: Boots and serves the first request in seconds, making it perfect for serverless scale-to-zero environments.
-- **Enterprise-Ready Controls**: Out-of-the-box support for strict request timeouts, explicit memory pressure rejection, and granular API rate limiting.
-- **Drop-in Compatibility**: Speak the language of the OpenAI API natively without requiring any adapter proxies.
-
----
-
-## Design Philosophy
-
-Hypercore is built on three core principles that guide every engineering decision:
-
-### 1. Boring is What Users Trust
-
-We don't chase benchmarks or add features for marketing. Every component is designed to be **predictable under load**. When your inference server is handling production traffic at 3 AM, you don't want clever optimizations — you want boring reliability. Hypercore chooses explicit error handling over silent fallbacks, deterministic scheduling over probabilistic heuristics, and clear failure modes over optimistic retries.
-
-### 2. No Silent Mutations
-
-If Hypercore can't fulfill a request exactly as specified, it rejects it with a clear error. It will never silently truncate your prompt, quietly reduce `max_tokens`, or drop requests without telling you. Every admission decision, every timeout, every rejection is logged, metriced, and traceable. This is a hard contract — not a best-effort promise.
-
-### 3. Safety is Not Optional
-
-Memory limits aren't suggestions. Request timeouts aren't configurable to "infinity." Body size limits can't be disabled. The Safety Governor runs continuously, monitoring system memory and swap pressure. When resources are constrained, Hypercore explicitly rejects new requests rather than degrading quality for existing ones. This protects both the system and the user experience.
-
----
-
-## Performance Characteristics
-
-Hypercore is optimized for **consistent latency** rather than peak throughput. Here's what to expect:
-
-| Metric | Typical Value | Notes |
-|--------|---------------|-------|
-| Cold start | < 3 seconds | Model loading depends on file size |
-| Time to first token | 50-200ms | Depends on prompt length and model |
-| Token throughput | 20-80 tok/s | CPU-only, varies by model and hardware |
-| Memory overhead | < 50MB | Runtime overhead beyond model weights |
-| Max concurrent sessions | 4 | Configurable, bounded by KV-cache |
-| P99 latency jitter | < 15% | Deterministic batching minimizes variance |
-
-**Why CPU-first?** Most teams don't need (or can't afford) GPU infrastructure for every deployment. Hypercore is built to run on standard cloud VMs, edge devices, and developer laptops. When you need GPU acceleration, the llama.cpp backend supports CUDA, Metal, and Vulkan — but you don't need them to get started.
 
 ## Quickstart
 
-### Option 1: Docker Compose (Recommended)
+### Option 1: Docker Compose
 
 ```bash
 # Clone
@@ -116,7 +67,7 @@ cargo build --release
 ./target/release/hypercore-rs serve --model path/to/model.gguf
 ```
 
-### Option 3: One-liner
+### Option 3: Quick Test
 
 ```bash
 curl http://localhost:8080/v1/chat/completions \
@@ -130,172 +81,65 @@ curl http://localhost:8080/v1/chat/completions \
   }'
 ```
 
-### Python SDK
-
-Hypercore is a drop-in replacement for the OpenAI Python SDK:
-
-```python
-import openai
-
-client = openai.OpenAI(
-    base_url="http://localhost:8080/v1",
-    api_key="your-key-here"  # or any string if auth is disabled
-)
-
-response = client.chat.completions.create(
-    model="hypercore-model",
-    messages=[{"role": "user", "content": "Explain quantum computing"}],
-    max_tokens=200,
-    temperature=0.7,
-    stream=True
-)
-
-for chunk in response:
-    if chunk.choices[0].delta.content:
-        print(chunk.choices[0].delta.content, end="", flush=True)
-```
-
 ---
 
-## Features
+## System Capabilities
 
 ### Engine
 
-| Feature | Description |
+| Capability | Description |
 |---------|-------------|
-| **Continuous Batching** | Round-robin chunked prefill with up to 4 concurrent sessions. No head-of-line blocking. |
-| **EOS Detection** | Automatically stops generation when the model produces an end-of-generation token. No garbage output. |
-| **Temperature Sampling** | Greedy (T=0) or temperature-scaled stochastic sampling with `temp()` + `dist()` chain. |
-| **Request Timeouts** | 120-second per-request deadline. Stuck sessions are auto-evicted and KV-cache slots reclaimed. |
-| **Memory Pressure Rejection** | Explicit `AdmissionRejected` error when the system detects memory pressure. No silent degradation. |
-| **Config-Driven** | `context_size` and `max_threads` are wired from config into the engine. No hardcoded magic numbers. |
+| **Continuous Batching** | Round-robin chunked prefill with up to 4 concurrent sessions. |
+| **EOS Detection** | Automatically stops generation on end-of-generation tokens. |
+| **Temperature Sampling** | Greedy (T=0) or temperature-scaled stochastic sampling. |
+| **Request Timeouts** | 120-second per-request deadline. Stuck sessions are auto-evicted. |
+| **Memory Pressure Rejection** | Explicit `AdmissionRejected` error when the system detects memory pressure. |
 
 ### API Server
 
-| Feature | Description |
+| Capability | Description |
 |---------|-------------|
 | **OpenAI-Compatible** | `/v1/chat/completions` with both SSE streaming and JSON non-streaming modes. |
-| **ChatML Templating** | Messages formatted as `<\|im_start\|>role\ncontent<\|im_end\|>` for instruction-tuned models. |
-| **Bearer Auth** | Set `HYPERCORE_API_KEY` to enable authentication. Health/metrics endpoints remain public. |
-| **CORS** | Cross-origin requests supported out of the box for web frontends. |
+| **ChatML Templating** | Messages formatted natively for instruction-tuned models. |
+| **Bearer Auth** | Set `HYPERCORE_API_KEY` to enable authentication. |
 | **Body Limit** | 2MB `DefaultBodyLimit` prevents OOM from malicious payloads. |
-| **Backpressure** | Returns `429 Too Many Requests` when the engine queue is full. |
-| **Drain Mode** | Returns `503 Service Unavailable` during graceful shutdown. |
+| **Backpressure** | Returns `429 Too Many Requests` when the engine queue is saturated. |
 
 ### Observability
 
-| Feature | Description |
+| Capability | Description |
 |---------|-------------|
 | **Prometheus** | `/metrics` endpoint with queue depth, token throughput, latency histograms. |
 | **OpenTelemetry** | Distributed tracing with OTLP export. |
-| **Request Timeline** | Every request tracks: `queued_at → admitted_at → first_token_at → completed_at` with latency breakdowns. |
-| **System Watchdog** | Memory pressure, swap usage, and CPU metrics sampled every 250ms. |
-
-### Safety
-
-| Feature | Description |
-|---------|-------------|
-| **3-Stage Shutdown** | Stage 1: Drain (reject new requests) → Stage 2: Timeout (60s) → Stage 3: Hard exit. Zero data loss. |
-| **Safety Governor** | Hysteresis-based runtime mode transitions: Running → Throttled → Paused. |
-| **Invariant Guards** | KV-cache slot acquisition is guarded with RAII-style invariant checks. |
-| **Atomic Session IDs** | Monotonic `AtomicU64` counter. No collision panics under load. |
-
----
-
-## API Reference
-
-### Endpoints
-
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/health` | GET | No | Health check. Returns `{"status": "ok"}` |
-| `/metrics` | GET | No | Prometheus-format metrics |
-| `/v1/models` | GET | Yes* | List available models |
-| `/v1/chat/completions` | POST | Yes* | Chat completions (streaming + non-streaming) |
-
-*Auth is only enforced when `HYPERCORE_API_KEY` is set.
-
-### Request Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `model` | string | `"hypercore-model"` | Model identifier |
-| `messages` | array | *(required)* | Chat messages `[{role, content}]` |
-| `max_tokens` | integer | `50` | Maximum tokens to generate |
-| `temperature` | float | `0.0` | Sampling temperature (0 = greedy) |
-| `stream` | boolean | `false` | Enable SSE streaming |
-
-### Response Format
-
-**Non-streaming** (`stream: false`):
-```json
-{
-  "id": "chatcmpl-42",
-  "object": "chat.completion",
-  "model": "hypercore-model",
-  "choices": [{
-    "index": 0,
-    "message": {"role": "assistant", "content": "Hello!"},
-    "finish_reason": "stop"
-  }],
-  "usage": {
-    "prompt_tokens": 12,
-    "completion_tokens": 5,
-    "total_tokens": 17
-  }
-}
-```
-
-**Streaming** (`stream: true`): Server-Sent Events with `data: {...}` chunks.
-
----
-
-## Configuration
-
-Create a `hypercore.yaml` in the working directory:
-
-```yaml
-host: "0.0.0.0"
-port: 8080
-model_path: "model.gguf"
-context_size: 8192
-max_threads: 4
-memory_limit_mb: 6000
-safe_mode: true
-```
-
-| Key | Default | Description |
-|-----|---------|-------------|
-| `context_size` | `8192` | Maximum context window (tokens) |
-| `max_threads` | `4` | CPU threads for inference |
-| `memory_limit_mb` | `6000` | Memory limit before admission rejection |
-| `safe_mode` | `true` | Caps context to 2048 and threads to 2 |
-
-### Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `HYPERCORE_API_KEY` | Bearer token for API authentication (optional) |
-| `RUST_LOG` | Log level: `info`, `debug`, `trace` |
+| **System Watchdog** | Memory pressure and CPU metrics sampled every 250ms. |
 
 ---
 
 ## Benchmarks
 
-Hypercore prioritizes **predictable latencies and safety** over peak throughput, while still remaining highly competitive for CPU inference.
+Measured behavior on reference hardware (AMD Ryzen 9 7900X, DDR5) running `hypercore bench` with a 0.5B Q5_K_M GGUF model.
 
-*Measured on an AMD Ryzen 9 7900X (DDR5) running `hypercore bench` with a 0.5B Q5_K_M GGUF model.*
+*Note: Results will vary significantly based on model size, quantization, and CPU architecture.*
 
-| Metric | Hypercore (measured) | Notes |
-|--------|----------------------|-------|
-| **Binary Size** | `15.8 MB` | Statically linked Rust binary. |
-| **Idle RAM Overhead** | `~45 MB` | Base memory footprint before loading model weights. |
-| **Cold Start** | `< 2.5s` | Varies heavily by disk speed and model size. |
-| **Time To First Token** | `55ms - 120ms` | For short prompts (<500 tokens). |
-| **Throughput (1 session)** | `~45 tokens/sec` | CPU execution. |
-| **Throughput (4 sessions)**| `~110 tokens/sec` | Batching efficiency scales well on multi-core. |
+| Metric | Value |
+|--------|-------|
+| **Binary Size** | `15.8 MB` |
+| **Idle RAM Overhead** | `~45 MB` |
+| **Cold Start** | `< 2.5s` |
+| **Time To First Token** | `55ms - 120ms` |
+| **Throughput (1 session)** | `~45 tokens/sec` |
+| **Throughput (4 sessions)**| `~110 tokens/sec` |
 
 *Comparisons to other runtimes (vLLM, llama.cpp, TGI) via standardized harness will be published in v1.1.*
+
+---
+
+## Limitations
+
+- **CPU inference only** (GPU support experimental via llama.cpp backend)
+- **Max concurrency is bounded** (default: 4 sessions)
+- **Not optimized for high-throughput public LLM APIs**
+- **Best suited for internal / edge / controlled environments**
 
 ---
 
@@ -339,7 +183,7 @@ WantedBy=multi-user.target
 Hypercore is perfect for serverless container platforms because it has zero bloat and boots instantly.
 1. Add a `Dockerfile` that downloads your GGUF and runs the binary.
 2. Set the `PORT` env var (Hypercore binds to it automatically).
-3. Deploy! The runtime will scale to zero safely and boot fast.
+3. Deploy!
 
 ---
 
@@ -347,21 +191,32 @@ Hypercore is perfect for serverless container platforms because it has zero bloa
 
 Hypercore enforces strict lifecycle tracking, invariant assertions on KV-cache slot allocation, and proactive memory pressure monitoring. 
 
-To keep this README short, we've moved the deep-dive architectural diagrams and lifecycle contracts into a dedicated document:
-
 👉 **[Read the Architecture Document](docs/architecture.md)**
 
 ---
 
 ## "Why Not vLLM?" FAQ
 
-We get this a lot. vLLM and TGI are phenomenal pieces of engineering. But they serve a different operational profile.
+Hypercore targets a different deployment class than vLLM. 
 
-- **GPU-First vs CPU-First:** vLLM expects a cluster of A100s or H100s. It uses PagedAttention to maximize throughput on GPUs. Hypercore is designed for the 95% of deployments that don't need a $20k GPU: internal tools, edge devices, and enterprise APIs running on standard VMs.
-- **Python vs Rust:** vLLM has a massive Python dependency graph. Deploying it securely in air-gapped environments is painful. Hypercore is a single 15MB binary.
+- **GPU-First vs CPU-First:** vLLM expects a cluster of A100s or H100s and uses PagedAttention to maximize throughput on GPUs. Hypercore is designed for the 95% of deployments that don't need a $20k GPU: internal tools, edge devices, and enterprise APIs running on standard VMs.
+- **Python vs Rust:** vLLM has a large Python dependency graph. Hypercore is a single 15MB statically linked binary.
 - **Throughput vs Reliability:** vLLM is optimized for maximum token generation. Hypercore optimizes for safety bounds — if a server runs out of memory, Hypercore rejects the request instantly with a clean `503` rather than failing mid-generation.
 
-Choose vLLM if you have massive GPU clusters and need to serve millions of users. Choose Hypercore if you need boring, rock-solid reliability on standard hardware.
+---
+
+## Design Philosophy
+
+Hypercore is built on three core principles that guide every engineering decision:
+
+### 1. Boring is What Users Trust
+Every component is designed to be **predictable under load**. Hypercore chooses explicit error handling over silent fallbacks, deterministic scheduling over probabilistic heuristics, and clear failure modes over optimistic retries.
+
+### 2. No Silent Mutations
+If Hypercore can't fulfill a request exactly as specified, it rejects it with a clear error. It will never silently truncate your prompt, quietly reduce `max_tokens`, or drop requests without telling you. Every admission decision, every timeout, every rejection is logged and metriced.
+
+### 3. Safety is Not Optional
+Memory limits aren't suggestions. Request timeouts aren't configurable to "infinity." Body size limits can't be disabled. The Safety Governor runs continuously, monitoring system memory and swap pressure.
 
 ---
 
@@ -383,6 +238,44 @@ hypercore stress --model model.gguf --rate 10 --duration 60
 
 ---
 
+## API Reference
+
+### Endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/health` | GET | No | Health check. Returns `{"status": "ok"}` |
+| `/metrics` | GET | No | Prometheus-format metrics |
+| `/v1/models` | GET | Yes* | List available models |
+| `/v1/chat/completions` | POST | Yes* | Chat completions (streaming + non-streaming) |
+
+*Auth is only enforced when `HYPERCORE_API_KEY` is set.
+
+---
+
+## Configuration
+
+Create a `hypercore.yaml` in the working directory:
+
+```yaml
+host: "0.0.0.0"
+port: 8080
+model_path: "model.gguf"
+context_size: 8192
+max_threads: 4
+memory_limit_mb: 6000
+safe_mode: true
+```
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `HYPERCORE_API_KEY` | Bearer token for API authentication (optional) |
+| `RUST_LOG` | Log level: `info`, `debug`, `trace` |
+
+---
+
 ## Contributing
 
 Contributions are welcome! Please:
@@ -392,43 +285,6 @@ Contributions are welcome! Please:
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
-
-### Development Setup
-
-```bash
-git clone https://github.com/SBALAVIGNESH123/hypercore-rs.git
-cd hypercore-rs
-cargo check          # Verify it compiles
-cargo check --tests  # Verify tests compile
-cargo build --release
-```
-
-### Code Quality Standards
-
-- **Zero warnings policy** — the codebase compiles with zero warnings across lib and all test files.
-- **No `unwrap()` in hot paths** — all engine and API code uses explicit error handling.
-- **Every metric is real** — no placeholder counters or hardcoded values.
-
----
-
-## Use Cases
-
-Hypercore is purpose-built for these deployment scenarios:
-
-### 🏢 Internal AI APIs
-Deploy behind your corporate firewall with Bearer auth. Teams can use the standard OpenAI Python SDK to interact with your own models without sending data to third-party APIs. Compliance-friendly, auditable, and fully under your control.
-
-### 🌐 Edge Inference
-Run on edge servers, IoT gateways, or retail locations. Hypercore's small binary size (~15MB), CPU-first design, and strict memory limits make it ideal for resource-constrained environments where GPU infrastructure isn't available.
-
-### 🧪 AI Product Prototyping
-Swap out OpenAI API calls with a local Hypercore instance during development. Same API, same SDKs, but with zero cost per token. Test prompt engineering, fine-tuned models, and RAG pipelines without cloud bills.
-
-### 🏥 Regulated Industries
-Healthcare, finance, and government deployments require data to stay on-premises. Hypercore runs entirely local — no telemetry phones home, no data leaves your network. The MIT license has no usage restrictions.
-
-### 🔬 Research & Experimentation
-Benchmark different GGUF models with the built-in `bench` and `stress` commands. Compare token throughput, latency profiles, and memory consumption across model sizes and quantization levels.
 
 ---
 
@@ -446,60 +302,6 @@ Hypercore takes security seriously at every layer:
 | **Shutdown** | 3-stage drain prevents data loss |
 
 **Responsible Disclosure:** If you find a security vulnerability, please email the maintainer directly rather than opening a public issue.
-
----
-
-## Roadmap
-
-Hypercore is under active development. Here's what's coming:
-
-### v1.1 (Next)
-- [ ] GPU acceleration (CUDA, Metal) out of the box
-- [ ] `top_p`, `top_k`, `frequency_penalty` sampling parameters
-- [ ] Graceful HTTP shutdown (connection draining without abort)
-- [ ] `/v1/completions` endpoint (legacy text completion)
-
-### v1.2
-- [ ] Multi-model serving (load multiple models, route by name)
-- [ ] LoRA adapter hot-loading
-- [ ] Structured output / JSON mode
-- [ ] WebSocket streaming
-
-### v2.0
-- [ ] Distributed inference across multiple nodes
-- [ ] Speculative decoding
-- [ ] KV-cache offloading to disk
-- [ ] Plugin system for custom pre/post-processing
-
-Want to influence the roadmap? [Open an issue](https://github.com/SBALAVIGNESH123/hypercore-rs/issues) or start a discussion.
-
----
-
-## FAQ
-
-**Q: Is Hypercore ready for production?**
-A: Yes. The core engine, API server, safety boundaries, and observability stack are production-hardened. It compiles with zero warnings, has comprehensive tests, and handles edge cases (timeouts, memory pressure, malicious payloads) explicitly.
-
-**Q: Do I need a GPU?**
-A: No. Hypercore is CPU-first by design. It runs on any machine with a modern x86_64 or ARM processor. GPU support through llama.cpp is available but not required.
-
-**Q: What models does it support?**
-A: Any model in GGUF format. This includes all models from the Hugging Face GGUF ecosystem — Llama, Mistral, Phi, Qwen, Gemma, and hundreds more. Any quantization level (Q4_K_M, Q5_K_M, Q8_0, F16) is supported.
-
-**Q: How does it compare to Ollama?**
-A: Ollama is a great tool for local experimentation. Hypercore is designed for production deployment — it adds continuous batching, safety governors, request timeouts, authentication, Prometheus metrics, and OpenTelemetry tracing that Ollama doesn't have.
-
-**Q: Can I use it with LangChain / LlamaIndex?**
-A: Yes. Both frameworks support custom OpenAI-compatible endpoints. Point them at `http://localhost:8080/v1` and they work out of the box.
-
-**Q: Is it free?**
-A: Yes. MIT licensed. No usage limits, no telemetry, no vendor lock-in. Use it for anything.
-
----
-
-## Star History
-
-If Hypercore is useful to you, consider giving it a ⭐ on GitHub. It helps others discover the project.
 
 ---
 
