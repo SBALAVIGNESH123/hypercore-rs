@@ -26,12 +26,6 @@
 
 ---
 
-<p align="center">
-  <img src="assets/banner.png" alt="Hypercore Banner" width="800" />
-</p>
-
----
-
 ## Why Hypercore?
 
 Most LLM inference runtimes (vLLM, TGI, llama.cpp server) are research-first tools retrofitted for production. Hypercore is built production-first from day one.
