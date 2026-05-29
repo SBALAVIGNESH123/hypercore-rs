@@ -42,27 +42,14 @@ Most LLM inference runtimes (vLLM, TGI, llama.cpp server) are research-first too
 
 ---
 
-## How Hypercore Compares
-
-| Feature | Hypercore | vLLM | llama.cpp server | TGI |
-|---------|-----------|------|-------------------|-----|
-| Language | Rust 🦀 | Python | C++ | Rust + Python |
-| OpenAI API | ✅ Full | ✅ Full | ⚠️ Partial | ⚠️ Partial |
-| Continuous Batching | ✅ | ✅ | ❌ | ✅ |
-| Memory Safety | ✅ Compile-time | ❌ Runtime GC | ⚠️ Manual | ⚠️ Mixed |
-| Request Timeouts | ✅ Built-in | ❌ | ❌ | ⚠️ External |
-| Auth Middleware | ✅ Built-in | ❌ | ❌ | ❌ |
-| Prometheus Metrics | ✅ | ✅ | ❌ | ✅ |
-| OpenTelemetry | ✅ | ❌ | ❌ | ❌ |
-| EOS Detection | ✅ | ✅ | ✅ | ✅ |
-| Safety Governor | ✅ | ❌ | ❌ | ❌ |
-| Graceful Shutdown | ✅ 3-stage | ⚠️ Basic | ❌ | ⚠️ Basic |
-| GGUF Support | ✅ | ❌ | ✅ | ❌ |
-| GPU Required | ❌ CPU-first | ✅ | ❌ | ✅ |
-| Binary Size | ~15MB | ~2GB+ | ~5MB | ~500MB+ |
-| Cold Start | < 5s | 30-60s | < 5s | 15-30s |
+## The Hypercore Advantage
 
 Hypercore is designed for teams who need **predictable, safe, observable inference** without the operational complexity of GPU clusters. If you're running models on CPU or edge devices, Hypercore is purpose-built for your use case.
+
+- **Zero-Bloat Ecosystem**: No massive Python dependency trees or gigabyte-sized installations. Just a single ~15MB statically linked Rust binary.
+- **Immediate Cold Starts**: Boots and serves the first request in seconds, making it perfect for serverless scale-to-zero environments.
+- **Enterprise-Ready Controls**: Out-of-the-box support for strict request timeouts, explicit memory pressure rejection, and granular API rate limiting.
+- **Drop-in Compatibility**: Speak the language of the OpenAI API natively without requiring any adapter proxies.
 
 ---
 
