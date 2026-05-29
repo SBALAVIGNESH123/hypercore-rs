@@ -1,0 +1,48 @@
+[package]
+name = "hypercore-rs"
+version = "0.1.0"
+edition = "2021"
+description = "A resource-aware AI runtime for local edge execution"
+
+[dependencies]
+# UI and Terminal
+ratatui = "0.26"
+crossterm = "0.27"
+
+# System monitoring (Watchdog)
+sysinfo = "0.30"
+
+# CLI Parsing
+clap = { version = "4.5", features = ["derive"] }
+
+# Async / IO
+tokio = { version = "1.37", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yml = "0.0.12"
+
+# Error Handling
+anyhow = "1.0"
+thiserror = "1.0"
+async-trait = "0.1.89"
+rand = "0.8.5"
+rand_distr = "0.4.3"
+rand_chacha = "0.3.1"
+llama-cpp-2 = "0.1.146"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+axum = { version = "0.8.9", default-features = false, features = ["tokio", "json", "http1"] }
+async-stream = "0.3.6"
+tower-http = { version = "0.6", features = ["cors"] }
+tokio-util = "0.7.18"
+futures-core = "0.3.32"
+uuid = { version = "1.11.0", features = ["v4"] }
+lazy_static = "1.5.0"
+prometheus = "0.14.0"
+opentelemetry = "0.32.0"
+opentelemetry_sdk = "0.32.1"
+opentelemetry-otlp = "0.32.0"
+tracing-opentelemetry = "0.33.0"
+reqwest = { version = "0.13.4", features = ["blocking"] }

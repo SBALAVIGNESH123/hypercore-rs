@@ -1,0 +1,33 @@
+# Build artifacts
+/target
+*.exe
+*.pdb
+
+# Model files (large binaries)
+*.gguf
+*.bin
+models/
+
+# Environment and secrets
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Temporary
+tmp/
+temp/
