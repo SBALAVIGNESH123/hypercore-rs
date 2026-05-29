@@ -14,7 +14,14 @@ async fn boot_test_server() -> u16 {
     let (_, state_rx) = watch::channel(RuntimeState::default());
     let (metrics_tx, _) = watch::channel(EngineMetrics::default());
 
-    let engine = LlamaEngine::new(TEST_MODEL.to_string(), 8192, 4, state_rx, metrics_tx, request_rx);
+    let engine = LlamaEngine::new(
+        TEST_MODEL.to_string(),
+        8192,
+        4,
+        state_rx,
+        metrics_tx,
+        request_rx,
+    );
 
     tokio::task::spawn_blocking(move || {
         let _ = engine.run_loop();

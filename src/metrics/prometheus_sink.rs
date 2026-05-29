@@ -1,4 +1,4 @@
-use crate::metrics::events::{MetricEvent, MetricSink, LatencyClass};
+use crate::metrics::events::{LatencyClass, MetricEvent, MetricSink};
 use lazy_static::lazy_static;
 use prometheus::{Histogram, IntCounter, IntGauge, Registry};
 
@@ -27,15 +27,31 @@ lazy_static! {
 
 pub fn register_metrics() {
     REGISTRY.register(Box::new(QUEUE_DEPTH.clone())).unwrap();
-    REGISTRY.register(Box::new(ACTIVE_SESSIONS.clone())).unwrap();
+    REGISTRY
+        .register(Box::new(ACTIVE_SESSIONS.clone()))
+        .unwrap();
     REGISTRY.register(Box::new(MEMORY_RSS.clone())).unwrap();
-    REGISTRY.register(Box::new(REQUESTS_ENQUEUED.clone())).unwrap();
-    REGISTRY.register(Box::new(REQUESTS_ADMITTED.clone())).unwrap();
-    REGISTRY.register(Box::new(TOKENS_GENERATED.clone())).unwrap();
-    REGISTRY.register(Box::new(REQUESTS_DROPPED.clone())).unwrap();
-    REGISTRY.register(Box::new(REQUESTS_REJECTED.clone())).unwrap();
-    REGISTRY.register(Box::new(REQUESTS_CANCELLED.clone())).unwrap();
-    REGISTRY.register(Box::new(DEGRADED_TRANSITIONS.clone())).unwrap();
+    REGISTRY
+        .register(Box::new(REQUESTS_ENQUEUED.clone()))
+        .unwrap();
+    REGISTRY
+        .register(Box::new(REQUESTS_ADMITTED.clone()))
+        .unwrap();
+    REGISTRY
+        .register(Box::new(TOKENS_GENERATED.clone()))
+        .unwrap();
+    REGISTRY
+        .register(Box::new(REQUESTS_DROPPED.clone()))
+        .unwrap();
+    REGISTRY
+        .register(Box::new(REQUESTS_REJECTED.clone()))
+        .unwrap();
+    REGISTRY
+        .register(Box::new(REQUESTS_CANCELLED.clone()))
+        .unwrap();
+    REGISTRY
+        .register(Box::new(DEGRADED_TRANSITIONS.clone()))
+        .unwrap();
     REGISTRY.register(Box::new(LATENCY_QUEUE.clone())).unwrap();
     REGISTRY.register(Box::new(LATENCY_TTFT.clone())).unwrap();
     REGISTRY.register(Box::new(LATENCY_TOTAL.clone())).unwrap();

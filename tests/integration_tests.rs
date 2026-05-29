@@ -12,7 +12,14 @@ async fn boot_test_engine() -> mpsc::Sender<InferenceRequest> {
     let (_, state_rx) = watch::channel(RuntimeState::default());
     let (metrics_tx, _) = watch::channel(EngineMetrics::default());
 
-    let engine = LlamaEngine::new(TEST_MODEL.to_string(), 8192, 4, state_rx, metrics_tx, request_rx);
+    let engine = LlamaEngine::new(
+        TEST_MODEL.to_string(),
+        8192,
+        4,
+        state_rx,
+        metrics_tx,
+        request_rx,
+    );
 
     tokio::task::spawn_blocking(move || {
         let _ = engine.run_loop();
@@ -62,7 +69,7 @@ async fn test_production_runtime_suite() {
                 priority: 1,
                 timeline: Default::default(),
                 max_tokens: Some(10),
-            temperature: None,
+                temperature: None,
             };
             tx.send(req).await.unwrap();
             let mut count = 0;
@@ -89,7 +96,7 @@ async fn test_production_runtime_suite() {
         priority: 1,
         timeline: Default::default(),
         max_tokens: Some(10),
-            temperature: None,
+        temperature: None,
     };
     request_tx.send(req).await.unwrap();
     tokio::time::sleep(Duration::from_secs(1)).await;
@@ -113,7 +120,7 @@ async fn test_production_runtime_suite() {
         priority: 1,
         timeline: Default::default(),
         max_tokens: Some(10),
-            temperature: None,
+        temperature: None,
     };
     request_tx.send(req).await.unwrap();
     let mut count = 0;

@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, client: &Client) -> io::Result<()> {
     let mut last_tick = Instant::now();
     let tick_rate = Duration::from_millis(500);
-    
+
     let mut metrics_text = String::from("Loading metrics...");
 
     loop {
@@ -68,12 +68,19 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, client: &Client) -> io::Resul
                 .split(size);
 
             let header = Paragraph::new("HYPERCORE Live Operator Dashboard")
-                .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+                .style(
+                    Style::default()
+                        .fg(Color::Cyan)
+                        .add_modifier(Modifier::BOLD),
+                )
                 .block(Block::default().borders(Borders::ALL).title("Status"));
             f.render_widget(header, chunks[0]);
 
-            let content = Paragraph::new(metrics_text.as_str())
-                .block(Block::default().borders(Borders::ALL).title("Metrics (Prometheus)"));
+            let content = Paragraph::new(metrics_text.as_str()).block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Metrics (Prometheus)"),
+            );
             f.render_widget(content, chunks[1]);
 
             let footer = Paragraph::new("Press 'q' to quit")
@@ -85,7 +92,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, client: &Client) -> io::Resul
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
             .unwrap_or_else(|| Duration::from_secs(0));
-            
+
         if crossterm::event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
                 if let KeyCode::Char('q') = key.code {
@@ -101,7 +108,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, client: &Client) -> io::Resul
                     metrics_text = text;
                 }
             } else {
-                metrics_text = String::from("Failed to connect to HYPERCORE server at http://127.0.0.1:8080/metrics");
+                metrics_text = String::from(
+                    "Failed to connect to HYPERCORE server at http://127.0.0.1:8080/metrics",
+                );
             }
             last_tick = Instant::now();
         }

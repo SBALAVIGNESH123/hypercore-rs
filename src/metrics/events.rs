@@ -5,7 +5,9 @@ pub enum MetricEvent {
     // Queue & Throughput events
     RequestEnqueued,
     RequestAdmitted,
-    TokenGenerated { count: usize },
+    TokenGenerated {
+        count: usize,
+    },
 
     // Rejections & Drops
     RequestDropped,
@@ -13,15 +15,27 @@ pub enum MetricEvent {
     RequestCancelled,
 
     // Performance measurements
-    LatencyMeasured { duration_ms: u64, class: LatencyClass },
-    
+    LatencyMeasured {
+        duration_ms: u64,
+        class: LatencyClass,
+    },
+
     // State transitions
-    DegradedModeChanged { old: DegradedMode, new: DegradedMode },
+    DegradedModeChanged {
+        old: DegradedMode,
+        new: DegradedMode,
+    },
 
     // Gauges
-    QueueDepthUpdated { depth: usize },
-    ActiveSessionsUpdated { active: usize },
-    MemoryUpdated { rss_bytes: u64 },
+    QueueDepthUpdated {
+        depth: usize,
+    },
+    ActiveSessionsUpdated {
+        active: usize,
+    },
+    MemoryUpdated {
+        rss_bytes: u64,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -38,7 +52,7 @@ pub trait MetricSink: Send + Sync {
 pub fn dispatch(event: MetricEvent) {
     // 1. Prometheus Sink
     crate::metrics::prometheus_sink::PrometheusSink.record(event.clone());
-    
+
     // 2. OpenTelemetry Sink (Coming next)
     // crate::metrics::telemetry::record(event);
 }

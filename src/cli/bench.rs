@@ -75,7 +75,7 @@ pub async fn run_benchmark(
                         } else if let Some(last) = last_token_time {
                             itls.push(now.duration_since(last).as_secs_f64() * 1000.0);
                         }
-                        
+
                         last_token_time = Some(now);
 
                         if token_count >= max_tokens {
@@ -90,19 +90,29 @@ pub async fn run_benchmark(
                 }
             }
 
-            let qsd_ms = t_admitted.map(|t| t.duration_since(t0_submission).as_secs_f64() * 1000.0).unwrap_or(0.0);
-            let ttft_ms = t_first_token.map(|t| t.duration_since(t0_submission).as_secs_f64() * 1000.0).unwrap_or(0.0);
-            let avg_itl_ms = if itls.is_empty() { 0.0 } else { itls.iter().sum::<f64>() / itls.len() as f64 };
+            let qsd_ms = t_admitted
+                .map(|t| t.duration_since(t0_submission).as_secs_f64() * 1000.0)
+                .unwrap_or(0.0);
+            let ttft_ms = t_first_token
+                .map(|t| t.duration_since(t0_submission).as_secs_f64() * 1000.0)
+                .unwrap_or(0.0);
+            let avg_itl_ms = if itls.is_empty() {
+                0.0
+            } else {
+                itls.iter().sum::<f64>() / itls.len() as f64
+            };
             let duration_s = t0_submission.elapsed().as_secs_f64();
 
-            let _ = stats_tx.send(SessionStats {
-                session_id,
-                qsd_ms,
-                ttft_ms,
-                avg_itl_ms,
-                token_count,
-                duration_s,
-            }).await;
+            let _ = stats_tx
+                .send(SessionStats {
+                    session_id,
+                    qsd_ms,
+                    ttft_ms,
+                    avg_itl_ms,
+                    token_count,
+                    duration_s,
+                })
+                .await;
         });
     }
 
@@ -124,9 +134,21 @@ pub async fn run_benchmark(
         0.0
     };
 
-    let avg_qsd = if !all_stats.is_empty() { all_stats.iter().map(|s| s.qsd_ms).sum::<f64>() / all_stats.len() as f64 } else { 0.0 };
-    let avg_ttft = if !all_stats.is_empty() { all_stats.iter().map(|s| s.ttft_ms).sum::<f64>() / all_stats.len() as f64 } else { 0.0 };
-    let avg_itl = if !all_stats.is_empty() { all_stats.iter().map(|s| s.avg_itl_ms).sum::<f64>() / all_stats.len() as f64 } else { 0.0 };
+    let avg_qsd = if !all_stats.is_empty() {
+        all_stats.iter().map(|s| s.qsd_ms).sum::<f64>() / all_stats.len() as f64
+    } else {
+        0.0
+    };
+    let avg_ttft = if !all_stats.is_empty() {
+        all_stats.iter().map(|s| s.ttft_ms).sum::<f64>() / all_stats.len() as f64
+    } else {
+        0.0
+    };
+    let avg_itl = if !all_stats.is_empty() {
+        all_stats.iter().map(|s| s.avg_itl_ms).sum::<f64>() / all_stats.len() as f64
+    } else {
+        0.0
+    };
 
     info!("======================================");
     info!("BENCHMARK RESULTS ({} Sessions)", concurrency);
@@ -134,9 +156,15 @@ pub async fn run_benchmark(
     info!("Aggregate TPS   : {:.2} tokens/sec", global_tps);
     info!("Total Tokens    : {}", total_tokens);
     info!("--------------------------------------");
-    info!("Avg QSD         : {:.2} ms (Queue Saturation Delay)", avg_qsd);
+    info!(
+        "Avg QSD         : {:.2} ms (Queue Saturation Delay)",
+        avg_qsd
+    );
     info!("Avg TTFT        : {:.2} ms (Time to First Token)", avg_ttft);
-    info!("Avg ITL         : {:.2} ms/token (Inter-Token Latency)", avg_itl);
+    info!(
+        "Avg ITL         : {:.2} ms/token (Inter-Token Latency)",
+        avg_itl
+    );
     info!("======================================");
 
     Ok(())

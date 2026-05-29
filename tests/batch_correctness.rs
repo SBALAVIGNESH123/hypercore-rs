@@ -1,11 +1,13 @@
+#![allow(clippy::await_holding_lock)]
+#![allow(clippy::manual_range_contains)]
 mod common;
 
-use hypercore_rs::engine::llama::{LlamaEngine, InferenceRequest, InferenceResponse};
 use hypercore_rs::core::state::RequestTimeline;
-use hypercore_rs::runtime::{RuntimeState, DegradedMode, RuntimeMode};
+use hypercore_rs::engine::llama::{InferenceRequest, InferenceResponse, LlamaEngine};
+use hypercore_rs::runtime::{DegradedMode, RuntimeMode, RuntimeState};
+use std::sync::Mutex;
 use tokio::sync::{mpsc, watch};
 use tokio_util::sync::CancellationToken;
-use std::sync::Mutex;
 
 lazy_static::lazy_static! {
     static ref TEST_MUTEX: Mutex<()> = Mutex::new(());
@@ -28,24 +30,25 @@ async fn test_concurrent_4_session_stability() {
         active_tokens: 0,
         max_tokens: 8192,
     });
-    
-    let (metrics_tx, _metrics_rx) = watch::channel(hypercore_rs::runtime::governor::EngineMetrics {
-        tokens_per_sec: 0.0,
-        queue_depth: 0,
-        stalled: false,
-        source: hypercore_rs::runtime::governor::MetricSource::LlamaEngine,
-        timestamp: std::time::Instant::now(),
-        latency_class: hypercore_rs::runtime::governor::LatencyClass::Compute,
-    });
+
+    let (metrics_tx, _metrics_rx) =
+        watch::channel(hypercore_rs::runtime::governor::EngineMetrics {
+            tokens_per_sec: 0.0,
+            queue_depth: 0,
+            stalled: false,
+            source: hypercore_rs::runtime::governor::MetricSource::LlamaEngine,
+            timestamp: std::time::Instant::now(),
+            latency_class: hypercore_rs::runtime::governor::LatencyClass::Compute,
+        });
 
     let (req_tx, req_rx) = mpsc::channel(10);
-    
+
     let engine = LlamaEngine::new(fixture, 8192, 4, state_rx, metrics_tx, req_rx);
-    
+
     let engine_handle = std::thread::spawn(move || {
         engine.run_loop().expect("Engine panicked");
     });
-    
+
     let mut responses = Vec::new();
     for i in 0..4 {
         let (resp_tx, mut resp_rx) = mpsc::channel(100);
@@ -58,10 +61,10 @@ async fn test_concurrent_4_session_stability() {
             priority: 1,
             timeline: RequestTimeline::default(),
             max_tokens: Some(10),
-                temperature: None,
+            temperature: None,
         };
         req_tx.send(req).await.unwrap();
-        
+
         let handle = tokio::spawn(async move {
             let mut count = 0;
             while let Some(Ok(resp)) = resp_rx.recv().await {
@@ -73,12 +76,12 @@ async fn test_concurrent_4_session_stability() {
         });
         responses.push(handle);
     }
-    
+
     for handle in responses {
         let count = handle.await.unwrap();
         assert!(count > 0, "Expected at least 1 token generated per session");
     }
-    
+
     drop(req_tx);
     let _ = engine_handle.join();
 }
@@ -107,7 +110,7 @@ async fn test_cancellation_mid_batch() {
     });
     let (req_tx, req_rx) = mpsc::channel(10);
     let engine = LlamaEngine::new(fixture, 8192, 4, state_rx, metrics_tx, req_rx);
-    
+
     let engine_handle = std::thread::spawn(move || {
         engine.run_loop().expect("Engine panicked");
     });
@@ -117,7 +120,7 @@ async fn test_cancellation_mid_batch() {
         let (resp_tx, mut resp_rx) = mpsc::channel(100);
         let cancel = CancellationToken::new();
         let cancel_clone = cancel.clone();
-        
+
         let req = InferenceRequest {
             request_id: format!("test-cancel-{}", i),
             prompt: "Cancel me".to_string(),
@@ -127,7 +130,7 @@ async fn test_cancellation_mid_batch() {
             priority: 1,
             timeline: RequestTimeline::default(),
             max_tokens: Some(50),
-                temperature: None,
+            temperature: None,
         };
         req_tx.send(req).await.unwrap();
 
@@ -145,16 +148,21 @@ async fn test_cancellation_mid_batch() {
         });
         tasks.push(handle);
     }
-    
+
     for handle in tasks {
         let (i, count) = handle.await.unwrap();
         if i < 2 {
-            assert!(count >= 5 && count <= 7, "Cancelled session {} got {} tokens", i, count);
+            assert!(
+                count >= 5 && count <= 7,
+                "Cancelled session {} got {} tokens",
+                i,
+                count
+            );
         } else {
             assert!(count >= 20, "Completed session {} got {} tokens", i, count);
         }
     }
-    
+
     drop(req_tx);
     let _ = engine_handle.join();
 }
@@ -167,7 +175,7 @@ async fn test_long_run_drift() {
         Some(f) => f,
         None => return,
     };
-    
+
     let (_state_tx, state_rx) = watch::channel(RuntimeState {
         mode: RuntimeMode::Running,
         degraded_mode: DegradedMode::Healthy,
@@ -182,14 +190,14 @@ async fn test_long_run_drift() {
         timestamp: std::time::Instant::now(),
         latency_class: hypercore_rs::runtime::governor::LatencyClass::Compute,
     });
-    
+
     let (req_tx, req_rx) = mpsc::channel(10);
     let engine = LlamaEngine::new(fixture, 8192, 4, state_rx, metrics_tx, req_rx);
-    
+
     let engine_handle = std::thread::spawn(move || {
         engine.run_loop().expect("Engine panicked");
     });
-    
+
     let mut _session_id = 100;
     for _iteration in 0..10 {
         let mut tasks = Vec::new();
@@ -208,10 +216,10 @@ async fn test_long_run_drift() {
             };
             req_tx.send(req).await.unwrap();
             _session_id += 1;
-            
+
             tasks.push(tokio::spawn(async move {
                 let mut count = 0;
-                while let Some(Ok(resp)) = resp_rx.recv().await { 
+                while let Some(Ok(resp)) = resp_rx.recv().await {
                     if let InferenceResponse::Token(_) = resp {
                         count += 1;
                     }
@@ -223,7 +231,7 @@ async fn test_long_run_drift() {
             task.await.unwrap();
         }
     }
-    
+
     drop(req_tx);
     let _ = engine_handle.join();
 }

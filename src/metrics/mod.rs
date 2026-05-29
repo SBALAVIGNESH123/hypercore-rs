@@ -1,7 +1,7 @@
 pub mod events;
 pub mod prometheus_sink;
-pub mod telemetry;
 pub mod stats;
+pub mod telemetry;
 
 use sysinfo::System;
 use tokio::sync::watch;

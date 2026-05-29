@@ -41,10 +41,10 @@ pub enum Commands {
     Bench {
         #[arg(short, long)]
         model: String,
-        
+
         #[arg(short, long, default_value_t = 4)]
         concurrency: usize,
-        
+
         #[arg(short, long, default_value_t = 50)]
         tokens: usize,
     },
@@ -52,15 +52,15 @@ pub enum Commands {
     Stress {
         #[arg(short, long)]
         model: String,
-        
+
         /// Target request rate (requests per second) for Poisson arrivals
         #[arg(short, long, default_value_t = 10.0)]
         rate: f64,
-        
+
         /// Burst multiplier to simulate sudden traffic spikes
         #[arg(short, long, default_value_t = 1.0)]
         burst_factor: f64,
-        
+
         /// Probability [0,1] of a request being cancelled prematurely
         #[arg(short, long, default_value_t = 0.05)]
         cancellation_prob: f64,

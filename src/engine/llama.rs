@@ -15,7 +15,6 @@ use tokio::sync::{mpsc, watch};
 use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
 
-
 const MAX_ACTIVE_SESSIONS: usize = 4;
 
 #[derive(Debug, Clone)]
@@ -175,20 +174,35 @@ impl LlamaEngine {
 
                     // 1. Hard bound on max_tokens
                     if tokens_to_generate > max_ctx {
-                        warn!("[Session {}] Rejected: max_tokens {} exceeds {} limit.", req.session_id, tokens_to_generate, max_ctx);
+                        warn!(
+                            "[Session {}] Rejected: max_tokens {} exceeds {} limit.",
+                            req.session_id, tokens_to_generate, max_ctx
+                        );
                         req.timeline.transition(RequestState::Rejected);
-                        let _ = req.response_tx.try_send(Err(RuntimeFailure::AdmissionRejected(format!("max_tokens exceeds context limit of {}", max_ctx))));
+                        let _ = req
+                            .response_tx
+                            .try_send(Err(RuntimeFailure::AdmissionRejected(format!(
+                                "max_tokens exceeds context limit of {}",
+                                max_ctx
+                            ))));
                         Self::dump_timeline(&req);
                         continue;
                     }
 
-                    let tokens = model.str_to_token(&req.prompt, llama_cpp_2::model::AddBos::Always).unwrap_or_else(|_| vec![llama_cpp_2::token::LlamaToken(1)]);
+                    let tokens = model
+                        .str_to_token(&req.prompt, llama_cpp_2::model::AddBos::Always)
+                        .unwrap_or_else(|_| vec![llama_cpp_2::token::LlamaToken(1)]);
 
                     // 2. Early Context Length Rejection
                     if tokens.len() + tokens_to_generate > max_ctx {
                         warn!("[Session {}] Rejected: prompt ({}) + max_tokens ({}) exceeds {} context limit.", req.session_id, tokens.len(), tokens_to_generate, max_ctx);
                         req.timeline.transition(RequestState::Rejected);
-                        let _ = req.response_tx.try_send(Err(RuntimeFailure::AdmissionRejected(format!("Prompt length + max_tokens exceeds context limit of {}", max_ctx))));
+                        let _ = req
+                            .response_tx
+                            .try_send(Err(RuntimeFailure::AdmissionRejected(format!(
+                                "Prompt length + max_tokens exceeds context limit of {}",
+                                max_ctx
+                            ))));
                         Self::dump_timeline(&req);
                         continue;
                     }
@@ -200,18 +214,28 @@ impl LlamaEngine {
                         crate::runtime::DegradedMode::Healthy => {}
                         crate::runtime::DegradedMode::MemoryPressure => {
                             if req.priority > 0 {
-                                warn!("[Session {}] MemoryPressure: Rejecting low-priority request.", req.session_id);
+                                warn!(
+                                    "[Session {}] MemoryPressure: Rejecting low-priority request.",
+                                    req.session_id
+                                );
                                 req.timeline.transition(RequestState::Rejected);
-                                let _ = req.response_tx.try_send(Err(RuntimeFailure::MemoryPressure));
+                                let _ = req
+                                    .response_tx
+                                    .try_send(Err(RuntimeFailure::MemoryPressure));
                                 Self::dump_timeline(&req);
                                 rejected = true;
                             }
                             // High-priority (0) requests are still admitted at full token budget
                         }
                         crate::runtime::DegradedMode::CriticalMemoryPressure => {
-                            warn!("[Session {}] CriticalMemoryPressure: Rejecting all requests.", req.session_id);
+                            warn!(
+                                "[Session {}] CriticalMemoryPressure: Rejecting all requests.",
+                                req.session_id
+                            );
                             req.timeline.transition(RequestState::Rejected);
-                            let _ = req.response_tx.try_send(Err(RuntimeFailure::MemoryPressure));
+                            let _ = req
+                                .response_tx
+                                .try_send(Err(RuntimeFailure::MemoryPressure));
                             Self::dump_timeline(&req);
                             rejected = true;
                         }
@@ -220,7 +244,7 @@ impl LlamaEngine {
                     if !rejected {
                         req.timeline.transition(RequestState::Admitted);
                         let _ = req.response_tx.try_send(Ok(InferenceResponse::Admitted));
-                        
+
                         let mut kv_slot = -1;
                         for slot in 0..(MAX_ACTIVE_SESSIONS as i32) {
                             if !active_requests.iter().any(|ar| ar.kv_slot == slot) {
@@ -228,7 +252,7 @@ impl LlamaEngine {
                                 break;
                             }
                         }
-                        
+
                         active_requests.push(ActiveRequest {
                             _kv_guard: InvariantGuard::acquire_kv_cache(req.session_id as u64),
                             req,
@@ -239,7 +263,11 @@ impl LlamaEngine {
                             kv_slot,
                             deadline: std::time::Instant::now() + request_timeout,
                         });
-                        info!("BatchScheduler: Admitted session. Active: {}/{}", active_requests.len(), MAX_ACTIVE_SESSIONS);
+                        info!(
+                            "BatchScheduler: Admitted session. Active: {}/{}",
+                            active_requests.len(),
+                            MAX_ACTIVE_SESSIONS
+                        );
                     }
                 } else {
                     break;
@@ -259,7 +287,9 @@ impl LlamaEngine {
                     let ar = &mut active_requests[ti];
                     warn!("[Session {}] TIMEOUT after 120s.", ar.req.session_id);
                     ar.req.timeline.transition(RequestState::Failed);
-                    let _ = ar.req.response_tx.try_send(Err(RuntimeFailure::Timeout("Request exceeded 120s timeout".into())));
+                    let _ = ar.req.response_tx.try_send(Err(RuntimeFailure::Timeout(
+                        "Request exceeded 120s timeout".into(),
+                    )));
                     Self::dump_timeline(&ar.req);
                     let _ = ctx.clear_kv_cache_seq(Some(ar.kv_slot as u32), None, None);
                     active_requests.remove(ti);
@@ -284,7 +314,7 @@ impl LlamaEngine {
             // 3. Build Batch from Active Requests
             batch.clear();
             let mut batch_indices = Vec::new();
-            
+
             let chunk_size = 256;
             let max_batch = 1024;
             let mut added_this_step = 0;
@@ -307,7 +337,7 @@ impl LlamaEngine {
                         // Request logits only for the final token of the full sequence
                         let is_last = j == ar.pending_tokens.len() - 1;
                         let idx = batch.n_tokens();
-                        
+
                         if let Err(e) = batch.add(token, ar.n_past, &[ar.kv_slot], is_last) {
                             tracing::error!("Batch add failed: {:?}", e);
                             break;
@@ -346,8 +376,12 @@ impl LlamaEngine {
             }
 
             let elapsed = start_time.elapsed().as_secs_f32();
-            let tps = if elapsed > 0.0 { batch.n_tokens() as f32 / elapsed } else { 0.0 };
-            
+            let tps = if elapsed > 0.0 {
+                batch.n_tokens() as f32 / elapsed
+            } else {
+                0.0
+            };
+
             // ISSUE-2 FIX: Report actual active session count instead of hardcoded 0
             let active_count = active_requests.len();
             let _ = self.metrics_tx.send(EngineMetrics {
@@ -360,13 +394,20 @@ impl LlamaEngine {
             });
 
             // ISSUE-3 FIX: Dispatch active sessions metric
-            dispatch(MetricEvent::ActiveSessionsUpdated { active: active_count });
+            dispatch(MetricEvent::ActiveSessionsUpdated {
+                active: active_count,
+            });
 
             // 5. Sample & Yield
             let mut i = 0;
             while i < active_requests.len() {
-                if let Some((_, last_idx)) = batch_indices.iter().find(|(req_idx, _)| *req_idx == i) {
-                    tracing::info!("[Session {}] Found batch index last_idx={}", active_requests[i].req.session_id, last_idx);
+                if let Some((_, last_idx)) = batch_indices.iter().find(|(req_idx, _)| *req_idx == i)
+                {
+                    tracing::info!(
+                        "[Session {}] Found batch index last_idx={}",
+                        active_requests[i].req.session_id,
+                        last_idx
+                    );
                     if *last_idx >= 0 {
                         let ar = &mut active_requests[i];
 
@@ -383,11 +424,18 @@ impl LlamaEngine {
                         };
 
                         let next_token = sampler.sample(&ctx, *last_idx);
-                        tracing::info!("[Session {}] Sampled token_id={}", ar.req.session_id, next_token.0);
+                        tracing::info!(
+                            "[Session {}] Sampled token_id={}",
+                            ar.req.session_id,
+                            next_token.0
+                        );
 
                         // EOS detection: check if this token is end-of-generation
                         if model.is_eog_token(next_token) {
-                            info!("[Session {}] EOS token detected. Completing.", ar.req.session_id);
+                            info!(
+                                "[Session {}] EOS token detected. Completing.",
+                                ar.req.session_id
+                            );
                             ar.req.timeline.transition(RequestState::Completed);
                             Self::dump_timeline(&ar.req);
                             let _ = ctx.clear_kv_cache_seq(Some(ar.kv_slot as u32), None, None);
@@ -397,11 +445,21 @@ impl LlamaEngine {
 
                         ar.pending_tokens.push(next_token);
 
-                        let token_bytes = model.token_to_piece_bytes(next_token, 64, false, None).unwrap_or_default();
+                        let token_bytes = model
+                            .token_to_piece_bytes(next_token, 64, false, None)
+                            .unwrap_or_default();
                         let token_str = String::from_utf8_lossy(&token_bytes).into_owned();
-                        tracing::info!("[Session {}] Sending token_str='{}'", ar.req.session_id, token_str);
+                        tracing::info!(
+                            "[Session {}] Sending token_str='{}'",
+                            ar.req.session_id,
+                            token_str
+                        );
 
-                        match ar.req.response_tx.try_send(Ok(InferenceResponse::Token(token_str))) {
+                        match ar
+                            .req
+                            .response_tx
+                            .try_send(Ok(InferenceResponse::Token(token_str)))
+                        {
                             Ok(_) => {
                                 if ar.generated == 0 {
                                     ar.req.timeline.transition(RequestState::Active);
@@ -418,7 +476,10 @@ impl LlamaEngine {
                                 continue;
                             }
                             Err(mpsc::error::TrySendError::Full(_)) => {
-                                tracing::warn!("[Session {}] Channel FULL! Token dropped.", ar.req.session_id);
+                                tracing::warn!(
+                                    "[Session {}] Channel FULL! Token dropped.",
+                                    ar.req.session_id
+                                );
                             }
                         }
 

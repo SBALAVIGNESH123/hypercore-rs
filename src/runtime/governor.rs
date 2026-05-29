@@ -1,5 +1,5 @@
-use crate::metrics::SystemMetrics;
 use crate::metrics::events::{dispatch, MetricEvent};
+use crate::metrics::SystemMetrics;
 use crate::runtime::{DegradedMode, RuntimeMode, RuntimeState};
 use std::collections::VecDeque;
 use std::time::Duration;
@@ -115,8 +115,7 @@ impl SafetyGovernor {
                     }
                 }
                 RuntimeMode::Paused => {
-                    if sys.memory_pressure_pct < (90.0 - RECOVERY_MARGIN as f64)
-                    {
+                    if sys.memory_pressure_pct < (90.0 - RECOVERY_MARGIN as f64) {
                         RuntimeMode::Throttled
                     } else {
                         RuntimeMode::Paused
@@ -154,4 +153,3 @@ impl SafetyGovernor {
         last - first
     }
 }
-

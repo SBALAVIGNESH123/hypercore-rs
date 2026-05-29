@@ -42,9 +42,9 @@ pub async fn run_chat(
         let req = InferenceRequest {
             request_id: uuid::Uuid::new_v4().to_string(),
             prompt: input.to_string(),
-            response_tx: response_tx,
+            response_tx,
             cancel: cancel.clone(),
-            session_id: session_id,
+            session_id,
             priority: 1,
             timeline: Default::default(),
             max_tokens: None,

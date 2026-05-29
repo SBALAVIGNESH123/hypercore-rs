@@ -75,10 +75,17 @@ async fn main() -> anyhow::Result<()> {
             let (request_tx, handle) = boot_runtime(&config).await?;
             let request_tx_clone = request_tx.clone();
             let drain_rx_clone = drain_rx.clone();
-            
+
             // Start server in background, keeping the handle so we can abort it
             let server_handle = tokio::spawn(async move {
-                if let Err(e) = hypercore_rs::server::start_server(&config.host, config.port, request_tx_clone, drain_rx_clone).await {
+                if let Err(e) = hypercore_rs::server::start_server(
+                    &config.host,
+                    config.port,
+                    request_tx_clone,
+                    drain_rx_clone,
+                )
+                .await
+                {
                     error!("API Server Error: {:?}", e);
                 }
             });
@@ -86,12 +93,12 @@ async fn main() -> anyhow::Result<()> {
             // Wait for shutdown trigger
             let _ = shutdown_rx.recv().await;
             info!("Stage 1: Draining API... no new requests will be accepted.");
-            
+
             // Abort the server task so its clone of request_tx is dropped.
             // This is required for the engine to see EOF on request_rx.
             server_handle.abort();
             drop(request_tx);
-            
+
             // Stage 1/2: Wait for engine to naturally exit or timeout
             match tokio::time::timeout(Duration::from_secs(60), handle).await {
                 Ok(_) => {
@@ -108,16 +115,29 @@ async fn main() -> anyhow::Result<()> {
         Commands::Monitor => {
             info!("Monitor mode is coming soon.");
         }
-        Commands::Bench { model, concurrency, tokens } => {
+        Commands::Bench {
+            model,
+            concurrency,
+            tokens,
+        } => {
             config.model_path = model.clone();
             config.enforce_safe_mode();
 
             let (request_tx, _handle) = boot_runtime(&config).await?;
-            if let Err(e) = hypercore_rs::cli::bench::run_benchmark(&model, concurrency, tokens, request_tx).await {
+            if let Err(e) =
+                hypercore_rs::cli::bench::run_benchmark(&model, concurrency, tokens, request_tx)
+                    .await
+            {
                 error!("Benchmark Error: {:?}", e);
             }
         }
-        Commands::Stress { model, rate, burst_factor, cancellation_prob, duration } => {
+        Commands::Stress {
+            model,
+            rate,
+            burst_factor,
+            cancellation_prob,
+            duration,
+        } => {
             let mut config = HypercoreConfig {
                 model_path: model.clone(),
                 ..Default::default()
@@ -125,7 +145,16 @@ async fn main() -> anyhow::Result<()> {
             config.enforce_safe_mode();
 
             let (request_tx, _handle) = boot_runtime(&config).await?;
-            if let Err(e) = hypercore_rs::cli::stress::run_stress(&model, rate, burst_factor, cancellation_prob, duration, request_tx).await {
+            if let Err(e) = hypercore_rs::cli::stress::run_stress(
+                &model,
+                rate,
+                burst_factor,
+                cancellation_prob,
+                duration,
+                request_tx,
+            )
+            .await
+            {
                 error!("Stress Error: {:?}", e);
             }
         }
@@ -137,7 +166,9 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn boot_runtime(config: &HypercoreConfig) -> anyhow::Result<(mpsc::Sender<InferenceRequest>, tokio::task::JoinHandle<()>)> {
+async fn boot_runtime(
+    config: &HypercoreConfig,
+) -> anyhow::Result<(mpsc::Sender<InferenceRequest>, tokio::task::JoinHandle<()>)> {
     info!("Booting HYPERCORE v1 (Central Engine)");
     info!("Model: {}", config.model_path);
 
@@ -196,7 +227,14 @@ async fn boot_runtime(config: &HypercoreConfig) -> anyhow::Result<(mpsc::Sender<
     let (request_tx, request_rx) = mpsc::channel::<InferenceRequest>(100);
 
     // Boot Engine
-    let engine = LlamaEngine::new(config.model_path.clone(), config.context_size, config.max_threads, state_rx, engine_tx, request_rx);
+    let engine = LlamaEngine::new(
+        config.model_path.clone(),
+        config.context_size,
+        config.max_threads,
+        state_rx,
+        engine_tx,
+        request_rx,
+    );
 
     // Run Engine as resident worker
     let handle = tokio::task::spawn_blocking(move || {

@@ -57,7 +57,7 @@ async fn test_priority_inversion() {
         priority: 2,
         timeline: Default::default(),
         max_tokens: Some(10),
-            temperature: None,
+        temperature: None,
     };
     request_tx.send(low_req).await.unwrap();
 

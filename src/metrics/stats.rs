@@ -1,5 +1,3 @@
-
-
 pub struct StatsAggregator {
     pub ttft_ms: Vec<u64>,
     pub itl_ms: Vec<u64>,
@@ -70,10 +68,13 @@ impl StatsAggregator {
             return 0.0;
         }
         let mean = data.iter().sum::<usize>() as f64 / data.len() as f64;
-        let variance_sum = data.iter().map(|&x| {
-            let diff = x as f64 - mean;
-            diff * diff
-        }).sum::<f64>();
+        let variance_sum = data
+            .iter()
+            .map(|&x| {
+                let diff = x as f64 - mean;
+                diff * diff
+            })
+            .sum::<f64>();
         variance_sum / data.len() as f64
     }
 
@@ -102,10 +103,16 @@ impl StatsAggregator {
         println!("\n=========================================");
         println!("🚀 Phase 3C Stress Test Results (Truth Layer)");
         println!("=========================================");
-        println!("Test Duration       : {:.2} s", self.duration_ms as f64 / 1000.0);
+        println!(
+            "Test Duration       : {:.2} s",
+            self.duration_ms as f64 / 1000.0
+        );
         println!("Total Submissions   : {}", self.total_requests);
         println!("Completed Requests  : {}", self.completed_requests);
-        println!("Rejected/Cancelled  : {} / {}", self.rejected_requests, self.cancelled_requests);
+        println!(
+            "Rejected/Cancelled  : {} / {}",
+            self.rejected_requests, self.cancelled_requests
+        );
         println!("Global Throughput   : {} TPS", tps);
         println!("-----------------------------------------");
         println!("⏱️ Latency (Time To First Token - TTFT)");
@@ -119,7 +126,10 @@ impl StatsAggregator {
         println!("  p99 : {} ms", p99_itl);
         println!("-----------------------------------------");
         println!("📊 System Stability");
-        println!("  Queue Stability Index (QSI) : {:.2} (Queue depth variance)", qsi);
+        println!(
+            "  Queue Stability Index (QSI) : {:.2} (Queue depth variance)",
+            qsi
+        );
         println!("  Drop Efficiency (Mean)      : {} ms", mean_drop_ms);
         println!("  KV Churn Events             : {}", self.kv_churn_events);
         println!("=========================================\n");

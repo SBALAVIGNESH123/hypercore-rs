@@ -50,7 +50,6 @@ async fn test_soak() {
 
     let (request_tx, _engine_rx) = boot_soak_engine().await;
 
-
     let start = std::time::Instant::now();
     let mut session_id = 1000;
 

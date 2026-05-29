@@ -1,16 +1,16 @@
+use crate::core::state::RequestTimeline;
 use crate::engine::llama::{InferenceRequest, InferenceResponse};
 use crate::metrics::stats::StatsAggregator;
-use crate::core::state::RequestTimeline;
 use anyhow::Result;
 use rand::Rng;
-use rand_chacha::ChaCha8Rng;
 use rand::SeedableRng;
+use rand_chacha::ChaCha8Rng;
 use rand_distr::{Distribution, Exp};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use tracing::info;
-use std::sync::{Arc, Mutex};
 
 pub async fn run_stress(
     model: &str,
@@ -34,14 +34,14 @@ pub async fn run_stress(
     let end_time = start_time + Duration::from_secs(duration_secs);
 
     let (cancel_tx, mut cancel_rx) = mpsc::channel::<(usize, CancellationToken)>(100);
-    
+
     // We use an exponential distribution for inter-arrival times (Poisson process)
     let lambda = rate * burst_factor;
     let exp_dist = Exp::new(lambda).unwrap();
     let mut rng = ChaCha8Rng::seed_from_u64(42); // Deterministic seed for reproducible statistical noise
 
     let mut session_counter = 10000;
-    
+
     // Background task to randomly cancel requests
     let stats_clone_cancel = stats.clone();
     tokio::spawn(async move {
@@ -64,7 +64,7 @@ pub async fn run_stress(
     while Instant::now() < end_time {
         let inter_arrival_time = exp_dist.sample(&mut rng);
         tokio::time::sleep(Duration::from_secs_f64(inter_arrival_time)).await;
-        
+
         if Instant::now() >= end_time {
             break;
         }
@@ -74,14 +74,18 @@ pub async fn run_stress(
         let (prompt, max_tokens) = if p_type < 0.3 {
             ("What is 2+2?".to_string(), 20) // Small
         } else if p_type < 0.8 {
-            ("Write a short paragraph about the history of artificial intelligence.".to_string(), 100) // Medium
+            (
+                "Write a short paragraph about the history of artificial intelligence.".to_string(),
+                100,
+            ) // Medium
         } else {
-            ("Write a detailed, comprehensive essay analyzing the geopolitical impact of the industrial revolution, including secondary effects on modern supply chains.".to_string(), 300) // Large
+            ("Write a detailed, comprehensive essay analyzing the geopolitical impact of the industrial revolution, including secondary effects on modern supply chains.".to_string(), 300)
+            // Large
         };
 
         let token = CancellationToken::new();
         let (resp_tx, mut resp_rx) = mpsc::channel(100);
-        
+
         let req = InferenceRequest {
             request_id: uuid::Uuid::new_v4().to_string(),
             prompt,
@@ -95,11 +99,12 @@ pub async fn run_stress(
         };
 
         session_counter += 1;
-        
+
         {
             let mut s = stats.lock().unwrap();
             s.total_requests += 1;
-            s.record_queue_depth(request_tx.max_capacity() - request_tx.capacity()); // Track how many items are in the channel
+            s.record_queue_depth(request_tx.max_capacity() - request_tx.capacity());
+            // Track how many items are in the channel
         }
 
         if request_tx.send(req).await.is_err() {
@@ -110,11 +115,11 @@ pub async fn run_stress(
 
         let stats_clone = stats.clone();
         let start_req = Instant::now();
-        
+
         let handle = tokio::spawn(async move {
             let mut ttft = 0;
             let mut last_token_time = None;
-            
+
             while let Some(res) = resp_rx.recv().await {
                 match res {
                     Ok(InferenceResponse::Admitted) => {
@@ -145,18 +150,19 @@ pub async fn run_stress(
                 s.completed_requests += 1;
             }
         });
-        
+
         wait_tasks.push(handle);
     }
 
     info!("Stress phase complete. Waiting up to 10 seconds for drain...");
-    
+
     // Wait for remaining tasks with timeout
     let _ = tokio::time::timeout(Duration::from_secs(10), async {
         for handle in wait_tasks {
             let _ = handle.await;
         }
-    }).await;
+    })
+    .await;
 
     let mut final_stats = stats.lock().unwrap();
     final_stats.duration_ms = start_time.elapsed().as_millis() as u64;
