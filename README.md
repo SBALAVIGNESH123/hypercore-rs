@@ -5,13 +5,14 @@
 <h1 align="center">Hypercore</h1>
 
 <p align="center">
-  <strong>Hypercore is an OpenAI-compatible LLM inference server written in Rust.</strong>
+  <strong>CPU-first LLM inference runtime for local AI ownership.</strong>
 </p>
 
 <p align="center">
   <a href="#quickstart">Quickstart</a> •
   <a href="#system-capabilities">Capabilities</a> •
   <a href="#benchmarks">Benchmarks</a> •
+  <a href="#titanmem">TitanMem</a> •
   <a href="#limitations">Limitations</a> •
   <a href="#deployment">Deploy</a>
 </p>
@@ -20,20 +21,17 @@
   <img src="https://img.shields.io/badge/rust-1.80+-orange?logo=rust" alt="Rust" />
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
   <img src="https://img.shields.io/badge/OpenAI-compatible-green" alt="OpenAI Compatible" />
-  <img src="https://img.shields.io/badge/status-production--ready-brightgreen" alt="Status" />
 </p>
 
 ---
+
+Hypercore is an OpenAI-compatible LLM inference server written in Rust, designed for internal APIs, edge inference, and on-prem deployments where reliability matters more than raw throughput.
 
 - **Continuous batching** (up to 4 sessions)
 - **Hard memory + context bounds** (no silent OOMs)
 - **CPU-first**, single ~15MB binary
 - **Prometheus + OpenTelemetry** built in
 - **Drop-in replacement** for OpenAI SDK
-
-*Best for: internal APIs, edge inference, on-prem deployments*
-
-Hypercore is a CPU-first, OpenAI-compatible LLM inference runtime focused on deterministic scheduling, bounded resource usage, and production stability.
 
 ---
 
@@ -117,9 +115,9 @@ curl http://localhost:8080/v1/chat/completions \
 
 ## Benchmarks
 
-Measured behavior on reference hardware (AMD Ryzen 9 7900X, DDR5) running `hypercore bench` with a 0.5B Q5_K_M GGUF model.
+Measured on reference hardware (AMD Ryzen 9 7900X, DDR5) with a 0.5B Q5_K_M GGUF model.
 
-*Note: Results will vary significantly based on model size, quantization, and CPU architecture.*
+*Results vary based on model size, quantization, and CPU architecture.*
 
 | Metric | Value |
 |--------|-------|
@@ -130,7 +128,35 @@ Measured behavior on reference hardware (AMD Ryzen 9 7900X, DDR5) running `hyper
 | **Throughput (1 session)** | `~45 tokens/sec` |
 | **Throughput (4 sessions)**| `~110 tokens/sec` |
 
-*Comparisons to other runtimes (vLLM, llama.cpp, TGI) via standardized harness will be published in v1.1.*
+---
+
+## TitanMem
+
+TitanMem is Hypercore's experimental memory virtualization subsystem. It was designed to improve inference speed when running models larger than available physical RAM.
+
+**Status: Experimental — current implementation does not outperform native OS paging.**
+
+We built TitanMem, benchmarked it rigorously under enforced memory pressure (via `SetProcessWorkingSetSizeEx` hard working set limits), and discovered that the Windows kernel's native demand paging already handles mmap'd model files near-optimally. Our prefetch strategy actively increased page faults and reduced throughput.
+
+We published the data anyway because honest engineering matters more than marketing.
+
+👉 **[Full benchmark results and methodology](docs/titanmem_benchmarks.md)**
+
+### Key Finding
+
+| Budget | Baseline Tok/s | TitanMem Tok/s | Baseline Page Faults | TitanMem Page Faults |
+|--------|---------------|---------------|---------------------|---------------------|
+| 1024 MB | **0.81** | 0.87 | 5,695,894 | 5,738,633 |
+| 2048 MB | **1.92** | 1.54 | 1,594,375 | 1,765,599 |
+
+TitanMem v1 is archived. Research continues into layer-aware scheduling and custom block I/O approaches.
+
+### Reproduce
+
+```bash
+cargo build --release
+python benchmarks/titanmem/run_blind_benchmarks.py
+```
 
 ---
 
@@ -140,6 +166,15 @@ Measured behavior on reference hardware (AMD Ryzen 9 7900X, DDR5) running `hyper
 - **Max concurrency is bounded** (default: 4 sessions)
 - **Not optimized for high-throughput public LLM APIs**
 - **Best suited for internal / edge / controlled environments**
+- **TitanMem memory engine is experimental and does not yet demonstrate an advantage**
+
+---
+
+## Architecture
+
+Hypercore enforces strict lifecycle tracking, invariant assertions on KV-cache slot allocation, and proactive memory pressure monitoring. 
+
+👉 **[Read the Architecture Document](docs/architecture.md)**
 
 ---
 
@@ -163,7 +198,6 @@ services:
 ```
 
 ### 2. systemd Service
-Deploying on a bare-metal Linux node? Drop this into `/etc/systemd/system/hypercore.service`:
 ```ini
 [Unit]
 Description=Hypercore LLM Inference Runtime
@@ -179,45 +213,6 @@ Environment="RUST_LOG=info"
 WantedBy=multi-user.target
 ```
 
-### 3. Railway / Render (Serverless Containers)
-Hypercore is perfect for serverless container platforms because it has zero bloat and boots instantly.
-1. Add a `Dockerfile` that downloads your GGUF and runs the binary.
-2. Set the `PORT` env var (Hypercore binds to it automatically).
-3. Deploy!
-
----
-
-## Architecture
-
-Hypercore enforces strict lifecycle tracking, invariant assertions on KV-cache slot allocation, and proactive memory pressure monitoring. 
-
-👉 **[Read the Architecture Document](docs/architecture.md)**
-
----
-
-## "Why Not vLLM?" FAQ
-
-Hypercore targets a different deployment class than vLLM. 
-
-- **GPU-First vs CPU-First:** vLLM expects a cluster of A100s or H100s and uses PagedAttention to maximize throughput on GPUs. Hypercore is designed for the 95% of deployments that don't need a $20k GPU: internal tools, edge devices, and enterprise APIs running on standard VMs.
-- **Python vs Rust:** vLLM has a large Python dependency graph. Hypercore is a single 15MB statically linked binary.
-- **Throughput vs Reliability:** vLLM is optimized for maximum token generation. Hypercore optimizes for safety bounds — if a server runs out of memory, Hypercore rejects the request instantly with a clean `503` rather than failing mid-generation.
-
----
-
-## Design Philosophy
-
-Hypercore is built on three core principles that guide every engineering decision:
-
-### 1. Boring is What Users Trust
-Every component is designed to be **predictable under load**. Hypercore chooses explicit error handling over silent fallbacks, deterministic scheduling over probabilistic heuristics, and clear failure modes over optimistic retries.
-
-### 2. No Silent Mutations
-If Hypercore can't fulfill a request exactly as specified, it rejects it with a clear error. It will never silently truncate your prompt, quietly reduce `max_tokens`, or drop requests without telling you. Every admission decision, every timeout, every rejection is logged and metriced.
-
-### 3. Safety is Not Optional
-Memory limits aren't suggestions. Request timeouts aren't configurable to "infinity." Body size limits can't be disabled. The Safety Governor runs continuously, monitoring system memory and swap pressure.
-
 ---
 
 ## CLI Commands
@@ -231,9 +226,6 @@ hypercore chat --model model.gguf
 
 # Run benchmarks
 hypercore bench --model model.gguf --concurrency 4 --tokens 100
-
-# Stress test
-hypercore stress --model model.gguf --rate 10 --duration 60
 ```
 
 ---
@@ -276,6 +268,22 @@ safe_mode: true
 
 ---
 
+## Design Philosophy
+
+### 1. Boring is What Users Trust
+Every component is designed to be **predictable under load**. Hypercore chooses explicit error handling over silent fallbacks, deterministic scheduling over probabilistic heuristics, and clear failure modes over optimistic retries.
+
+### 2. No Silent Mutations
+If Hypercore can't fulfill a request exactly as specified, it rejects it with a clear error. It will never silently truncate your prompt, quietly reduce `max_tokens`, or drop requests without telling you.
+
+### 3. Safety is Not Optional
+Memory limits aren't suggestions. Request timeouts aren't configurable to "infinity." Body size limits can't be disabled.
+
+### 4. Measure Before You Claim
+Every performance claim in this repository is backed by reproducible benchmarks. If a subsystem doesn't demonstrate an advantage under rigorous testing, we say so.
+
+---
+
 ## Contributing
 
 Contributions are welcome! Please:
@@ -290,8 +298,6 @@ Contributions are welcome! Please:
 
 ## Security
 
-Hypercore takes security seriously at every layer:
-
 | Layer | Protection |
 |-------|------------|
 | **Network** | Optional Bearer token auth, CORS controls |
@@ -300,8 +306,6 @@ Hypercore takes security seriously at every layer:
 | **Engine** | Explicit admission rejection under memory pressure |
 | **Runtime** | 120s request timeouts prevent resource exhaustion |
 | **Shutdown** | 3-stage drain prevents data loss |
-
-**Responsible Disclosure:** If you find a security vulnerability, please email the maintainer directly rather than opening a public issue.
 
 ---
 
