@@ -1,36 +1,33 @@
 # Hypercore
 
-<p align="center">
-  <img src="assets/banner.png" alt="HyperCore Banner" width="800"/>
-</p>
-
 **A local AI that learns from your documents, remembers your decisions, and helps you discover patterns in your own thinking.**
 
 CPU-first LLM inference runtime + personal intelligence system, written in Rust.
 
-[Quickstart](#quickstart) • [Personal Intelligence](#personal-intelligence) • [Inference Engine](#inference-engine) • [Benchmarks](#benchmarks) • [Architecture](#architecture)
+![Rust](https://img.shields.io/badge/Rust-1.80+-orange) ![License](https://img.shields.io/badge/License-MIT-blue) ![OpenAI Compatible](https://img.shields.io/badge/API-OpenAI_Compatible-green) ![Release](https://img.shields.io/github/v/release/SBALAVIGNESH123/hypercore-rs)
 
-![Rust](https://img.shields.io/badge/Rust-1.80+-orange) ![License](https://img.shields.io/badge/License-MIT-blue) ![OpenAI Compatible](https://img.shields.io/badge/API-OpenAI_Compatible-green)
-
----
-
-## What Makes This Different
-
-Most local AI tools store **chunks and embeddings**. They can answer:
-> "What does document X say?"
-
-Hypercore builds a **personal memory graph**. It can answer:
-> "What decisions have I made repeatedly?"  
-> "What technologies do I consistently prefer?"  
-> "What patterns appear across my projects?"
-
-That's the difference between retrieval and intelligence.
+[Quickstart](#-quickstart) · [Personal Intelligence](#-personal-intelligence) · [Inference Engine](#-inference-engine) · [Architecture](#-architecture) · [Contributing](#-contributing)
 
 ---
 
-## Quickstart
+## The Problem
 
-### From Source
+Every local AI tool today does the same thing: **store your documents, let you ask questions about them.**
+
+That's retrieval. It's useful. But it's not intelligence.
+
+Hypercore goes further. It reads your journals, meeting notes, architecture decisions, and project logs — then **tells you things about yourself you hadn't noticed.**
+
+> *"Across 8 projects, you repeatedly chose simpler local deployments over more scalable architectures. You consistently optimize for independence rather than maximum scale."*
+
+That's not search. That's synthesis. That's the difference.
+
+---
+
+## 🚀 Quickstart
+
+### Install from Source
+
 ```bash
 # Prerequisites: Rust 1.80+, CMake, Clang
 git clone https://github.com/SBALAVIGNESH123/hypercore-rs.git
@@ -38,199 +35,220 @@ cd hypercore-rs
 cargo build --release
 ```
 
-### Ingest Your Documents
-```bash
-# Ingest markdown, text, YAML — any natural language files
-hypercore ingest --path ./my-notes
-hypercore ingest --path ./meeting-notes
-hypercore ingest --path ./journal
-```
+### Your First Memory Graph
 
-### Discover Patterns
+Three commands. That's all it takes.
+
 ```bash
-# See your extracted memories
+# 1. Feed it your documents
+hypercore ingest --path ./my-notes
+
+# 2. See what it learned about you
 hypercore memory show
 
-# See your work evolution
-hypercore memory timeline
-
-# "Why am I like this?" — deep self-analysis
+# 3. Ask "Why am I like this?"
 hypercore memory --model ./model.gguf explain
-
-# Weekly personal insight report
-hypercore memory --model ./model.gguf insight
-
-# Discover recurring themes
-hypercore memory --model ./model.gguf patterns
-
-# Recall why you made a specific decision
-hypercore memory --model ./model.gguf recall "database"
 ```
 
-### Run the API Server
+Hypercore ships with sample documents in `examples/` so you can try it immediately:
+
+```bash
+hypercore ingest --path ./examples
+hypercore memory show
+hypercore memory timeline
+```
+
+### Run as an API Server
+
+Hypercore is also a full OpenAI-compatible inference server:
+
 ```bash
 hypercore serve --model ./model.gguf --port 8080
 
-# OpenAI-compatible endpoint
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"hypercore","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
+Drop-in replacement for the OpenAI SDK. Your existing code just works.
+
 ---
 
-## Personal Intelligence
+## 🧠 Personal Intelligence
 
 ### How It Works
 
+Most AI tools stop at retrieval. Hypercore builds a **personal memory graph** from your documents and uses it to generate insights about your decision-making patterns.
+
 ```
-Your Documents → Ingestion → Embeddings + Chunks → SQLite
-                                                      ↓
-                                              Memory Extraction
-                                           (natural language only,
-                                            source code skipped)
-                                                      ↓
-                                              Memory Graph
-                                        (Decisions, Preferences,
-                                         Projects, Relationships)
-                                                      ↓
-                                         LLM Synthesis (optional)
-                                        Compressed memories fed to
-                                        local model for insight
-                                                      ↓
-                                              Insight + Feedback
-                                         "Was this surprising?" (1-4)
+Your Documents
+    ↓
+Ingestion (streaming, batched embeddings)
+    ↓
+SQLite Knowledge Store (FTS5 + vector search + dedup)
+    ↓
+Memory Extraction (natural language only — code files skipped)
+    ↓
+Memory Graph (Decisions · Preferences · Projects · Relationships)
+    ↓
+LLM Synthesis (compressed memories → local model → insight)
+    ↓
+Feedback ("Was this surprising?" → persisted 1-4 rating)
 ```
+
+The entire pipeline runs locally. Your documents never leave your machine.
 
 ### Commands
 
 | Command | What It Does |
 |---|---|
 | `memory show` | Display your extracted memory graph by category |
-| `memory timeline` | Chronological view of your decisions and projects |
+| `memory timeline` | Chronological view showing how your work evolved |
 | `memory recall <topic>` | Find evidence and context for past decisions |
-| `memory patterns` | Theme distribution, word frequency, source analysis |
-| `memory explain` | "Why am I like this?" — synthesize your decision-making DNA |
+| `memory patterns` | Theme distribution, recurring words, source analysis |
+| `memory explain` | **"Why am I like this?"** — synthesize your decision-making DNA |
 | `memory insight` | Generate a weekly personal observation report |
+| `memory sync <path>` | Sync a directory into the memory bank |
 
 ### With LLM Synthesis
 
-Add `--model <path.gguf>` to any memory command for AI-powered synthesis:
+Add `--model <path.gguf>` to unlock AI-powered synthesis:
 
 ```bash
-# Without model: shows raw data + statistics
+# Without model → raw data + statistics
 hypercore memory patterns
 
-# With model: compressed memories → LLM → synthesized insight
+# With model → compressed memories → LLM → synthesized insight
 hypercore memory --model ./qwen-3b.gguf patterns
 ```
 
-The system:
-1. Retrieves all memories from SQLite
-2. Clusters by category (Decision, Preference, Project, Relationship)
-3. Compresses to ~200 tokens (3 examples per cluster)
-4. Prints token budget instrumentation
-5. Sends to local LLM for synthesis
-6. Streams the response
-7. Asks for feedback (1-4 rating, persisted)
+The system automatically compresses your memories to fit within the model's context window, prints token budget instrumentation, and streams the response in real time.
 
 ### Feedback Loop
 
-After every insight, Hypercore asks:
+After every insight, Hypercore asks one question:
+
 ```
 How valuable was this insight?
-  1) Obvious
-  2) Somewhat useful
-  3) Surprising
-  4) Changed how I think
+  1) Obvious — I already knew this
+  2) Somewhat useful — mild interest
+  3) Surprising — I hadn't noticed this
+  4) Changed how I think — genuinely new perspective
 ```
 
-Ratings are persisted to `insight_feedback` in SQLite. This is how you measure whether the system is generating real value.
+Every rating is persisted to SQLite. This is how we measure whether the system produces real value — not retrieval accuracy, not benchmark scores, but **genuine user reactions.**
+
+If nobody ever picks 3 or 4, we have work to do. If several users consistently pick 4, we've found something rare.
 
 ---
 
-## Inference Engine
+## ⚡ Inference Engine
 
-### Capabilities
+Hypercore's inference runtime is production-grade, not a wrapper. It handles multi-session batching, memory pressure, and graceful degradation — the boring reliability that makes local AI actually usable.
+
+### Core Capabilities
 
 | Feature | Description |
 |---|---|
-| Continuous Batching | Round-robin chunked prefill, up to 4 concurrent sessions |
-| Memory Pressure Rejection | Explicit `AdmissionRejected` under pressure — no silent OOMs |
-| Request Timeouts | 300s deadline, auto-eviction of stuck sessions |
-| Temperature Sampling | Greedy (T=0) or stochastic sampling |
-| LoRA Support | Adapter path configurable (loading not yet implemented) |
-| EOS Detection | Auto-stop on end-of-generation tokens |
+| **Continuous Batching** | Round-robin chunked prefill with up to 4 concurrent sessions |
+| **Memory Pressure Rejection** | Explicit `AdmissionRejected` under pressure — never silent OOMs |
+| **Request Timeouts** | 300s deadline with auto-eviction of stuck sessions |
+| **Temperature Sampling** | Greedy (T=0) or temperature-scaled stochastic sampling |
+| **EOS Detection** | Auto-stop on end-of-generation tokens |
+| **LoRA Support** | Adapter path configurable (loading not yet implemented — we say so honestly) |
 
 ### TitanMem
 
-Adaptive KV-cache congestion controller with:
-- Dual-signal EMA (utilization + pressure)
-- Hysteresis mode transitions (Calm → Cautious → Critical)
-- Dynamic threshold tuning
-- Per-session byte tracking
+Our adaptive KV-cache congestion controller, built on real control theory:
 
-**Status**: Real, tested, working. See [benchmark results](docs/titanmem_benchmarks.md).
+- **Dual-signal EMA** — tracks both utilization and memory pressure
+- **Hysteresis mode transitions** — Calm → Cautious → Critical with deadband to prevent flapping
+- **Dynamic threshold tuning** — adapts to workload patterns over time
+- **Per-session byte tracking** — fine-grained memory accounting
+
+We built TitanMem, benchmarked it rigorously, and discovered it didn't outperform the OS page cache. **We published the data anyway** because honest engineering matters more than marketing. [Read the benchmarks →](docs/titanmem_benchmarks.md)
 
 ### API Server
 
 | Endpoint | Method | Description |
 |---|---|---|
 | `/health` | GET | Health check |
-| `/metrics` | GET | Prometheus metrics |
-| `/v1/models` | GET | List models |
+| `/metrics` | GET | Prometheus-format metrics |
+| `/v1/models` | GET | List available models |
 | `/v1/chat/completions` | POST | Chat completions (streaming + non-streaming) |
 
-OpenAI SDK compatible. Set `HYPERCORE_API_KEY` for authentication.
+OpenAI SDK compatible. Set `HYPERCORE_API_KEY` for bearer token authentication.
 
 ---
 
-## Knowledge Store
+## 📊 Knowledge Store
 
-- **SQLite** with hybrid FTS5 full-text search + cosine vector similarity
+The knowledge layer combines multiple retrieval strategies in a single SQLite database:
+
+- **Hybrid search** — FTS5 full-text search + cosine vector similarity, automatically routed
 - **Content-hash deduplication** — re-ingesting the same file is a no-op
-- **Tree-sitter parsing** for C/C++ files (function-level chunking)
-- **Streaming ingestion** with batch embedding (64 chunks per batch)
+- **Tree-sitter parsing** — function-level chunking for C/C++ source files
+- **Streaming ingestion** — batch embedding (64 chunks per batch) with real-time progress
+- **Smart filtering** — memory extraction only processes natural language files; source code is skipped entirely
 
 ---
 
-## Evaluation
+## 📈 Evaluation
 
-Real retrieval evaluation, not hardcoded scores:
+We don't hardcode benchmark scores. Every evaluation runs real retrieval:
 
 ```bash
 hypercore studio eval my_assistant.yaml
 ```
 
-Output:
 ```
 Eval Results: my_assistant.yaml
   Questions:          4
   Retrieval Hits:     1 / 4
   Retrieval Accuracy: 25.0%
   Avg Top Score:      0.2318
+  ✓ What are my most important projects? (score: 0.196, themes: ["HyperCore"])
+  ✗ How do I typically write technical documents? (score: 0.240, themes: [])
+  ✗ What decisions have I repeatedly made? (score: 0.172, themes: [])
+  ✗ What technologies do I consistently prefer? (score: 0.318, themes: [])
 ```
 
-Each question is embedded, searched against the real knowledge store, and scored by theme overlap. No fake metrics.
+25% accuracy. Not 92%. Because that's the real number.
 
 ---
 
-## Benchmarks
+## 🏗 Architecture
 
-Measured on AMD Ryzen 9 7900X, DDR5, 0.5B Q5_K_M GGUF:
+### Design Principles
+
+**1. Boring is what users trust.**
+Every component is designed to be predictable under load. We choose explicit error handling over silent fallbacks, deterministic scheduling over probabilistic heuristics, and clear failure modes over optimistic retries.
+
+**2. No silent mutations.**
+If Hypercore can't fulfill a request exactly as specified, it rejects it with a clear error. It will never silently truncate your prompt, quietly reduce max_tokens, or drop requests without telling you.
+
+**3. Measure before you claim.**
+Every performance claim is backed by reproducible benchmarks. If a subsystem doesn't demonstrate an advantage under rigorous testing, we say so. See: TitanMem.
+
+**4. Insights over retrieval.**
+The goal isn't "chat with your PDFs." It's "discover patterns in your thinking." That requires synthesis, not search.
+
+### Benchmarks
+
+Measured on AMD Ryzen 9 7900X, DDR5, with a 0.5B Q5_K_M GGUF model:
 
 | Metric | Value |
 |---|---|
 | Binary Size | 15.8 MB |
 | Idle RAM | ~45 MB |
 | Cold Start | < 2.5s |
-| TTFT | 55-120ms |
+| Time to First Token | 55–120ms |
 | Throughput (1 session) | ~45 tok/s |
 | Throughput (4 sessions) | ~110 tok/s |
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
 ```yaml
 # hypercore.yaml
@@ -245,37 +263,33 @@ safe_mode: true
 
 | Variable | Description |
 |---|---|
-| `HYPERCORE_API_KEY` | Bearer token for API auth |
+| `HYPERCORE_API_KEY` | Bearer token for API authentication (optional) |
 | `RUST_LOG` | Log level: `info`, `debug`, `trace` |
 
 ---
 
-## Design Philosophy
+## 📋 Project Status
 
-1. **Boring is what users trust.** Predictable under load. Explicit errors over silent fallbacks.
-2. **No silent mutations.** If it can't fulfill a request exactly, it rejects with a clear error.
-3. **Measure before you claim.** Every benchmark is reproducible. If something doesn't work, we say so.
-4. **Insights over retrieval.** The goal isn't "chat with your PDFs." It's "discover patterns in your thinking."
+We believe in radical transparency. Here's exactly where every component stands:
 
----
-
-## Project Status
-
-| Component | Status |
-|---|---|
-| Inference Engine | ✅ Production-ready |
-| TitanMem | ✅ Working, experimental |
-| Knowledge Store | ✅ Working |
-| Ingestion Pipeline | ✅ Working |
-| Memory Extraction | ✅ Working (keyword heuristics) |
-| Memory Commands | ✅ 7 commands working |
-| LLM Synthesis | 🔌 Wired, needs model |
-| Eval Pipeline | ✅ Real retrieval |
-| LoRA Training | ❌ Not yet implemented |
+| Component | Status | Notes |
+|---|---|---|
+| Inference Engine | ✅ Production-ready | Continuous batching, pressure handling, timeouts |
+| TitanMem | ✅ Working | Experimental — honest benchmarks published |
+| Knowledge Store | ✅ Working | FTS5 + vector search + dedup |
+| Ingestion Pipeline | ✅ Working | Streaming, tree-sitter, batch embedding |
+| Memory Extraction | ✅ Working | Keyword heuristics, code files skipped |
+| Memory Commands | ✅ 7 commands | show, timeline, recall, patterns, explain, insight, sync |
+| Feedback Collection | ✅ Working | 1–4 ratings persisted to SQLite |
+| LLM Synthesis | 🔌 Wired | Needs GGUF model to test |
+| Eval Pipeline | ✅ Real retrieval | No hardcoded scores |
+| LoRA Fine-tuning | ❌ Not yet | Honest warning in code |
 
 ---
 
-## Contributing
+## 🤝 Contributing
+
+We welcome contributions. Here's how:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -283,12 +297,18 @@ safe_mode: true
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+If you're not sure where to start, check the [issues](https://github.com/SBALAVIGNESH123/hypercore-rs/issues).
+
 ---
 
-## License
+## 📄 License
 
 MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-**Built with 🦀 Rust and ❤️ by [@SBALAVIGNESH123](https://github.com/SBALAVIGNESH123)**
+<p align="center">
+  Built with 🦀 Rust and ❤️ by <a href="https://github.com/SBALAVIGNESH123">Bala Vignesh S</a>
+  <br><br>
+  <a href="https://github.com/SBALAVIGNESH123/hypercore-rs/stargazers">⭐ Star us on GitHub</a> · <a href="https://github.com/SBALAVIGNESH123/hypercore-rs/releases">📦 Latest Release</a> · <a href="https://github.com/SBALAVIGNESH123/hypercore-rs/issues">🐛 Report a Bug</a>
+</p>
