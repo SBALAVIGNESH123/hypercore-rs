@@ -1,0 +1,17 @@
+[
+  {
+    "id": "long-1",
+    "prompt": "You are given a highly detailed manual covering all known configurations for advanced networking systems spanning five decades. Extract all IP address subnets mentioned and summarize their deployment topology. Begin reading the manual: [Data...]",
+    "max_tokens": 1500
+  },
+  {
+    "id": "long-2",
+    "prompt": "Analyze the following concatenated log files from 15 microservices over a 24-hour period. Identify the root cause of the spike at 04:32 AM and detail the cascading failure sequence. Logs: [Data...]",
+    "max_tokens": 1500
+  },
+  {
+    "id": "long-3",
+    "prompt": "Please review this entire codebase architecture document and map every service to its corresponding theoretical database schema, assuming third normal form. Document: [Data...]",
+    "max_tokens": 1500
+  }
+]

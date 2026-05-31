@@ -11,5 +11,6 @@ pub mod runtime;
 pub mod server;
 
 pub mod ui;
-
 pub mod titanmem;
+pub mod knowledge;
+pub mod studio;

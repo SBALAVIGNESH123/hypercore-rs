@@ -1,0 +1,564 @@
+[
+  {
+    "question": "Where is KV cache allocated?",
+    "q_type": "architecture",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\src\\llama-kv-cache.h",
+      "..\\llama.cpp\\src\\llama-kv-cache.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-iswa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-iswa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-iswa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-dsa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-dsa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-iswa.h"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Why does llama.cpp use mmap instead of malloc?",
+    "q_type": "architecture",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\examples\\gguf-hash\\deps\\xxhash\\xxhash.h",
+      "..\\llama.cpp\\src\\llama.cpp",
+      "..\\llama.cpp\\src\\llama-mmap.cpp",
+      "..\\llama.cpp\\examples\\gguf-hash\\deps\\xxhash\\xxhash.h",
+      "..\\llama.cpp\\src\\llama-mmap.cpp",
+      "..\\llama.cpp\\vendor\\cpp-httplib\\httplib.cpp",
+      "..\\llama.cpp\\src\\llama-mmap.cpp",
+      "..\\llama.cpp\\src\\llama-memory-hybrid.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-sycl\\dpct\\helper.hpp",
+      "..\\llama.cpp\\tools\\cli\\main.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Where is attention computed?",
+    "q_type": "architecture",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\ggml\\src\\ggml-cann\\aclnn_ops.h",
+      "..\\llama.cpp\\src\\models\\qwen35moe.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cann\\aclnn_ops.h",
+      "..\\llama.cpp\\tools\\mtmd\\models\\minicpmv.cpp",
+      "..\\llama.cpp\\src\\llama-model-saver.cpp",
+      "..\\llama.cpp\\src\\models\\qwen35.cpp",
+      "..\\llama.cpp\\src\\models\\llada.cpp",
+      "..\\llama.cpp\\tests\\test-llama-archs.cpp",
+      "..\\llama.cpp\\examples\\passkey\\README.md",
+      "..\\llama.cpp\\src\\llama-quant.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "How is quantization implemented for Q4_0?",
+    "q_type": "semantic_reasoning",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\docs\\backend\\OPENVINO.md",
+      "..\\llama.cpp\\docs\\backend\\OPENCL.md",
+      "..\\llama.cpp\\ggml\\src\\ggml-cann\\ggml-cann.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\quants.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-cann\\ggml-cann.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-quants.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-openvino\\ggml-quants.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-openvino\\ggml-quants.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\quants.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\quants.c"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Where is ggml_backend_buffer defined?",
+    "q_type": "identifier_lookup",
+    "routed_to": "FTS",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\hbm.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-backend.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-backend.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-backend.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-virtgpu\\backend\\apir_cs_ggml-rpc-back.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\amx\\amx.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-sycl\\ggml-sycl.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\repack.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-sycl\\ggml-sycl.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\amx\\amx.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "How does batching work?",
+    "q_type": "semantic_reasoning",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\tools\\server\\server-context.cpp",
+      "..\\llama.cpp\\tools\\perplexity\\perplexity.cpp",
+      "..\\llama.cpp\\common\\speculative.cpp",
+      "..\\llama.cpp\\examples\\batched.swift\\README.md",
+      "..\\llama.cpp\\examples\\llama.android\\lib\\src\\main\\cpp\\ai_chat.cpp",
+      "..\\llama.cpp\\tools\\server\\server-context.cpp",
+      "..\\llama.cpp\\tests\\test-backend-sampler.cpp",
+      "..\\llama.cpp\\tools\\server\\server-context.cpp",
+      "..\\llama.cpp\\examples\\parallel\\parallel.cpp",
+      "..\\llama.cpp\\examples\\passkey\\passkey.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "What is the CPU backend execution graph?",
+    "q_type": "architecture",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\src\\llama-context.h",
+      "..\\llama.cpp\\ggml\\include\\ggml-backend.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ggml-cpu.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ggml-cpu.c",
+      "..\\llama.cpp\\vendor\\miniaudio\\miniaudio.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-vulkan\\ggml-vulkan.cpp",
+      "..\\llama.cpp\\ggml\\include\\ggml-cpu.h",
+      "..\\llama.cpp\\ggml\\include\\ggml-cpu.h",
+      "..\\llama.cpp\\ggml\\include\\ggml-backend.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-openvino\\utils.h"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Where is llama_model_loader implemented?",
+    "q_type": "identifier_lookup",
+    "routed_to": "FTS",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\src\\llama-adapter.h",
+      "..\\llama.cpp\\src\\llama-model.cpp",
+      "..\\llama.cpp\\src\\llama-model.cpp",
+      "..\\llama.cpp\\src\\models\\phimoe.cpp",
+      "..\\llama.cpp\\src\\llama-model-loader.cpp",
+      "..\\llama.cpp\\src\\llama-model-loader.cpp",
+      "..\\llama.cpp\\tools\\server\\server-context.cpp",
+      "..\\llama.cpp\\src\\models\\t5.cpp",
+      "..\\llama.cpp\\src\\models\\openai-moe.cpp",
+      "..\\llama.cpp\\src\\llama-model-loader.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "How are GGUF tensors loaded?",
+    "q_type": "semantic_reasoning",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\tools\\completion\\README.md",
+      "..\\llama.cpp\\ggml\\src\\gguf.cpp",
+      "..\\llama.cpp\\ggml\\src\\gguf.cpp",
+      "..\\llama.cpp\\ggml\\src\\gguf.cpp",
+      "..\\llama.cpp\\gguf-py\\gguf\\__init__.py",
+      "..\\llama.cpp\\tests\\test-backend-ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml.c",
+      "..\\llama.cpp\\ggml\\src\\ggml.c",
+      "..\\llama.cpp\\ggml\\src\\ggml.c",
+      "..\\llama.cpp\\tests\\test-backend-ops.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Where is ggml_compute_forward defined?",
+    "q_type": "identifier_lookup",
+    "routed_to": "FTS",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\unary-ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\unary-ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\unary-ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ggml-cpu.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\binary-ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\binary-ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\binary-ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ops.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Where are quantization formats defined?",
+    "q_type": "identifier_lookup",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\ggml\\src\\ggml-common.h",
+      "..\\llama.cpp\\tools\\quantize\\quantize.cpp",
+      "..\\llama.cpp\\src\\llama-quant.cpp",
+      "..\\llama.cpp\\tools\\quantize\\quantize.cpp",
+      "..\\llama.cpp\\tools\\quantize\\quantize.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\quants.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-vulkan\\vulkan-shaders\\vulkan-shaders-gen.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-common.h",
+      "..\\llama.cpp\\tests\\test-quantize-fns.cpp",
+      "..\\llama.cpp\\docs\\backend\\OPENVINO.md"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "How is speculative decoding implemented?",
+    "q_type": "semantic_reasoning",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\examples\\speculative\\README.md",
+      "..\\llama.cpp\\docs\\speculative.md",
+      "..\\llama.cpp\\docs\\speculative.md",
+      "..\\llama.cpp\\common\\ngram-map.cpp",
+      "..\\llama.cpp\\examples\\speculative-simple\\README.md",
+      "..\\llama.cpp\\examples\\speculative-simple\\speculative-simple.cpp",
+      "..\\llama.cpp\\common\\speculative.h",
+      "..\\llama.cpp\\docs\\speculative.md",
+      "..\\llama.cpp\\common\\speculative.cpp",
+      "..\\llama.cpp\\examples\\lookahead\\README.md"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Where is llama_decode implemented?",
+    "q_type": "identifier_lookup",
+    "routed_to": "FTS",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\examples\\speculative\\README.md",
+      "..\\llama.cpp\\tools\\server\\server-context.cpp",
+      "..\\llama.cpp\\examples\\lookahead\\README.md",
+      "..\\llama.cpp\\src\\llama-vocab.cpp",
+      "..\\llama.cpp\\src\\llama.cpp",
+      "..\\llama.cpp\\src\\llama-context.cpp",
+      "..\\llama.cpp\\examples\\passkey\\README.md",
+      "..\\llama.cpp\\ggml\\src\\ggml-virtgpu\\backend\\shared\\apir_cs.h",
+      "..\\llama.cpp\\tools\\server\\server-common.h",
+      "..\\llama.cpp\\src\\llama-mmap.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "How do we pass prompt tokens to the model?",
+    "q_type": "architecture",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\examples\\simple\\simple.cpp",
+      "..\\llama.cpp\\tools\\completion\\completion.cpp",
+      "..\\llama.cpp\\examples\\simple\\simple.cpp",
+      "..\\llama.cpp\\tools\\tokenize\\tokenize.cpp",
+      "..\\llama.cpp\\tools\\ui\\src\\lib\\types\\api.d.ts",
+      "..\\llama.cpp\\src\\llama-vocab.cpp",
+      "..\\llama.cpp\\conversion\\chatglm.py",
+      "..\\llama.cpp\\tools\\completion\\README.md",
+      "..\\llama.cpp\\tools\\tokenize\\tokenize.cpp",
+      "..\\llama.cpp\\tools\\tts\\tts.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Where is the runtime builder?",
+    "q_type": "identifier_lookup",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\docs\\build.md",
+      "..\\llama.cpp\\docs\\build-s390x.md",
+      "..\\llama.cpp\\ggml\\CMakeLists.txt",
+      "..\\llama.cpp\\docs\\backend\\SYCL.md",
+      "..\\llama.cpp\\docs\\backend\\snapdragon\\README.md",
+      "..\\llama.cpp\\docs\\backend\\SYCL.md",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\spacemit\\spine_tcm.h",
+      "..\\llama.cpp\\docs\\backend\\SYCL.md",
+      "..\\llama.cpp\\docs\\backend\\OPENVINO.md",
+      "..\\llama.cpp\\CMakeLists.txt"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "How are tasks scheduled?",
+    "q_type": "architecture",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\tools\\server\\server-queue.cpp",
+      "..\\llama.cpp\\tools\\server\\server-queue.cpp",
+      "..\\llama.cpp\\tools\\server\\server-queue.cpp",
+      "..\\llama.cpp\\tools\\server\\server-queue.h",
+      "..\\llama.cpp\\vendor\\miniaudio\\miniaudio.h",
+      "..\\llama.cpp\\tools\\server\\server-queue.h",
+      "..\\llama.cpp\\tools\\server\\server-queue.h",
+      "..\\llama.cpp\\examples\\llama-eval\\llama-eval.py",
+      "..\\llama.cpp\\vendor\\miniaudio\\miniaudio.h",
+      "..\\llama.cpp\\tools\\server\\server-context.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "How does work stealing function?",
+    "q_type": "semantic_reasoning",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\ggml\\src\\ggml-backend.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-hexagon\\htp\\hmx-matmul-ops.c",
+      "..\\llama.cpp\\tools\\perplexity\\perplexity.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-hexagon\\htp\\worker-pool.c",
+      "..\\llama.cpp\\vendor\\miniaudio\\miniaudio.h",
+      "..\\llama.cpp\\tools\\server\\server-queue.h",
+      "..\\llama.cpp\\tools\\ui\\tests\\stories\\fixtures\\blog-post.ts",
+      "..\\llama.cpp\\examples\\gguf-hash\\deps\\xxhash\\xxhash.h",
+      "..\\llama.cpp\\vendor\\miniaudio\\miniaudio.h",
+      "..\\llama.cpp\\vendor\\miniaudio\\miniaudio.h"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "How does threadpool manage threads?",
+    "q_type": "semantic_reasoning",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\vendor\\miniaudio\\miniaudio.h",
+      "..\\llama.cpp\\ggml\\src\\ggml.c",
+      "..\\llama.cpp\\ggml\\include\\ggml.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ggml-cpu.c",
+      "..\\llama.cpp\\tools\\completion\\README.md",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ggml-cpu.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ggml-cpu.c",
+      "..\\llama.cpp\\vendor\\miniaudio\\miniaudio.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-hexagon\\htp\\worker-pool.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-hexagon\\htp\\worker-pool.h"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Why is KV cache memory unmapped?",
+    "q_type": "semantic_reasoning",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\src\\llama-kv-cache.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-iswa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-iswa.h",
+      "..\\llama.cpp\\src\\llama-kv-cache-dsa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-iswa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-dsa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache.h",
+      "..\\llama.cpp\\src\\llama-memory.h",
+      "..\\llama.cpp\\src\\llama-kv-cache-iswa.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Where is tensor data stored in memory?",
+    "q_type": "architecture",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\ggml\\include\\ggml.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-cann\\aclnn_ops.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-cann\\ggml-cann.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cann\\aclnn_ops.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-cann\\aclnn_ops.cpp",
+      "..\\llama.cpp\\tests\\export-graph-ops.cpp",
+      "..\\llama.cpp\\ggml\\include\\gguf.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-virtgpu\\backend\\shared\\apir_cs_ggml.h",
+      "..\\llama.cpp\\ggml\\src\\gguf.cpp",
+      "..\\llama.cpp\\gguf-py\\gguf\\gguf_reader.py"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "How does llama_get_logits work?",
+    "q_type": "semantic_reasoning",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\src\\llama-impl.cpp",
+      "..\\llama.cpp\\tools\\llama-bench\\llama-bench.cpp",
+      "..\\llama.cpp\\src\\llama-context.cpp",
+      "..\\llama.cpp\\src\\llama-impl.cpp",
+      "..\\llama.cpp\\src\\llama-context.cpp",
+      "..\\llama.cpp\\src\\llama-impl.cpp",
+      "..\\llama.cpp\\src\\llama-sampler.cpp",
+      "..\\llama.cpp\\tools\\results\\results.cpp",
+      "..\\llama.cpp\\tests\\test-llama-archs.cpp",
+      "..\\llama.cpp\\src\\llama-context.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Where is ggml_mul_mat implemented?",
+    "q_type": "identifier_lookup",
+    "routed_to": "FTS",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\spacemit\\ime.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-sycl\\ggml-sycl.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-sycl\\ggml-sycl.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\binary-ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-opencl\\ggml-opencl.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\repack.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml.c"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Explain how RoPE (Rotary Positional Embedding) is calculated.",
+    "q_type": "semantic_reasoning",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\tests\\test-backend-ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-hexagon\\htp\\rope-ops.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-hexagon\\htp\\rope-ops.c",
+      "..\\llama.cpp\\tests\\test-backend-ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-hexagon\\htp\\rope-ops.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-cuda\\rope.cu",
+      "..\\llama.cpp\\ggml\\src\\ggml-sycl\\rope.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ops.cpp",
+      "..\\llama.cpp\\src\\llama-hparams.cpp",
+      "..\\llama.cpp\\tests\\test-backend-ops.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Where is the vocab tokenizer implemented?",
+    "q_type": "identifier_lookup",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\src\\llama-vocab.cpp",
+      "..\\llama.cpp\\src\\llama-vocab.cpp",
+      "..\\llama.cpp\\src\\llama-vocab.cpp",
+      "..\\llama.cpp\\common\\llguidance.cpp",
+      "..\\llama.cpp\\tests\\test-tokenizer-random.py",
+      "..\\llama.cpp\\src\\llama-model-saver.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "How is thread synchronization handled in ggml?",
+    "q_type": "semantic_reasoning",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\ggml\\src\\ggml.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ggml-cpu.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ggml-cpu.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ggml-cpu.c",
+      "..\\llama.cpp\\ggml\\src\\ggml.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-threading.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-webgpu\\ggml-webgpu.cpp",
+      "..\\llama.cpp\\ggml\\include\\ggml.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-rpc\\ggml-rpc.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "What does ggml_gallocr do?",
+    "q_type": "architecture",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\ggml\\src\\ggml-alloc.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-alloc.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-alloc.c",
+      "..\\llama.cpp\\ggml\\src\\ggml.c",
+      "..\\llama.cpp\\ggml\\include\\ggml.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml.c",
+      "..\\llama.cpp\\ggml\\src\\ggml-cpu\\ggml-cpu.c",
+      "..\\llama.cpp\\ggml\\src\\ggml.c"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Where is the context size defined in llama.cpp?",
+    "q_type": "identifier_lookup",
+    "routed_to": "FTS",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\src\\llama-context.cpp",
+      "..\\llama.cpp\\src\\llama-context.cpp",
+      "..\\llama.cpp\\src\\llama-context.cpp",
+      "..\\llama.cpp\\tools\\server\\server-context.cpp",
+      "..\\llama.cpp\\examples\\llama.android\\lib\\src\\main\\cpp\\ai_chat.cpp",
+      "..\\llama.cpp\\tools\\server\\server-context.cpp",
+      "..\\llama.cpp\\tools\\server\\server-context.cpp",
+      "..\\llama.cpp\\src\\llama-mmap.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "How do metal backend shaders work?",
+    "q_type": "semantic_reasoning",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\ggml\\src\\ggml-metal\\ggml-metal.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-metal\\ggml-metal.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-metal\\ggml-metal.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-metal\\ggml-metal-ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-metal\\ggml-metal-ops.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-metal\\ggml-metal-ops.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-metal\\ggml-metal-ops.cpp",
+      "..\\llama.cpp\\ggml\\include\\ggml-metal.h",
+      "..\\llama.cpp\\ggml\\src\\ggml-metal\\ggml-metal-device.cpp",
+      "..\\llama.cpp\\ggml\\src\\ggml-metal\\ggml-metal-context.h"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "Where is grammar parsing implemented?",
+    "q_type": "identifier_lookup",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\docs\\development\\parsing.md",
+      "..\\llama.cpp\\src\\llama-grammar.h",
+      "..\\llama.cpp\\common\\peg-parser.h",
+      "..\\llama.cpp\\tests\\test-grammar-parser.cpp",
+      "..\\llama.cpp\\tests\\peg-parser\\test-gbnf-generation.cpp",
+      "..\\llama.cpp\\src\\llama-grammar.cpp",
+      "..\\llama.cpp\\docs\\autoparser.md",
+      "..\\llama.cpp\\docs\\development\\parsing.md",
+      "..\\llama.cpp\\tests\\peg-parser\\test-gbnf-generation.cpp",
+      "..\\llama.cpp\\tests\\peg-parser\\test-gbnf-generation.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  },
+  {
+    "question": "What is the role of llama_kv_cache_view?",
+    "q_type": "architecture",
+    "routed_to": "Vector",
+    "retrieved_context_files": [
+      "..\\llama.cpp\\src\\llama-kv-cache.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-dsa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-dsa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-iswa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-dsa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-iswa.cpp",
+      "..\\llama.cpp\\src\\llama-kv-cache-iswa.cpp"
+    ],
+    "generated_answer": "Error parsing response: Object {\"error\": Object {\"code\": Number(404), \"message\": String(\"models/gemini-1.5-flash-latest is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.\"), \"status\": String(\"NOT_FOUND\")}}",
+    "evaluation": null
+  }
+]

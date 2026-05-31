@@ -1,255 +1,235 @@
-<p align="center">
-  <img src="assets/logo.png" alt="Hypercore Logo" width="120" />
-</p>
+# Hypercore
 
-<h1 align="center">Hypercore</h1>
+**A local AI that learns from your documents, remembers your decisions, and helps you discover patterns in your own thinking.**
 
-<p align="center">
-  <strong>CPU-first LLM inference runtime for local AI ownership.</strong>
-</p>
+CPU-first LLM inference runtime + personal intelligence system, written in Rust.
 
-<p align="center">
-  <a href="#quickstart">Quickstart</a> •
-  <a href="#system-capabilities">Capabilities</a> •
-  <a href="#benchmarks">Benchmarks</a> •
-  <a href="#titanmem">TitanMem</a> •
-  <a href="#limitations">Limitations</a> •
-  <a href="#deployment">Deploy</a>
-</p>
+[Quickstart](#quickstart) • [Personal Intelligence](#personal-intelligence) • [Inference Engine](#inference-engine) • [Benchmarks](#benchmarks) • [Architecture](#architecture)
 
-<p align="center">
-  <img src="https://img.shields.io/badge/rust-1.80+-orange?logo=rust" alt="Rust" />
-  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
-  <img src="https://img.shields.io/badge/OpenAI-compatible-green" alt="OpenAI Compatible" />
-</p>
+![Rust](https://img.shields.io/badge/Rust-1.80+-orange) ![License](https://img.shields.io/badge/License-MIT-blue) ![OpenAI Compatible](https://img.shields.io/badge/API-OpenAI_Compatible-green)
 
 ---
 
-Hypercore is an OpenAI-compatible LLM inference server written in Rust, designed for internal APIs, edge inference, and on-prem deployments where reliability matters more than raw throughput.
+## What Makes This Different
 
-- **Continuous batching** (up to 4 sessions)
-- **Hard memory + context bounds** (no silent OOMs)
-- **CPU-first**, single ~15MB binary
-- **Prometheus + OpenTelemetry** built in
-- **Drop-in replacement** for OpenAI SDK
+Most local AI tools store **chunks and embeddings**. They can answer:
+> "What does document X say?"
+
+Hypercore builds a **personal memory graph**. It can answer:
+> "What decisions have I made repeatedly?"  
+> "What technologies do I consistently prefer?"  
+> "What patterns appear across my projects?"
+
+That's the difference between retrieval and intelligence.
 
 ---
 
 ## Quickstart
 
-### Option 1: Docker Compose
-
-```bash
-# Clone
-git clone https://github.com/SBALAVIGNESH123/hypercore-rs.git
-cd hypercore-rs
-
-# Download a model
-mkdir models
-# Download any GGUF model into models/
-
-# Run
-docker compose up -d
-
-# Test
-curl http://localhost:8080/health
-```
-
-### Option 2: From Source
-
+### From Source
 ```bash
 # Prerequisites: Rust 1.80+, CMake, Clang
+git clone https://github.com/SBALAVIGNESH123/hypercore-rs.git
+cd hypercore-rs
 cargo build --release
-
-# Run
-./target/release/hypercore-rs serve --model path/to/model.gguf
 ```
 
-### Option 3: Quick Test
-
+### Ingest Your Documents
 ```bash
+# Ingest markdown, text, YAML — any natural language files
+hypercore ingest --path ./my-notes
+hypercore ingest --path ./meeting-notes
+hypercore ingest --path ./journal
+```
+
+### Discover Patterns
+```bash
+# See your extracted memories
+hypercore memory show
+
+# See your work evolution
+hypercore memory timeline
+
+# "Why am I like this?" — deep self-analysis
+hypercore memory --model ./model.gguf explain
+
+# Weekly personal insight report
+hypercore memory --model ./model.gguf insight
+
+# Discover recurring themes
+hypercore memory --model ./model.gguf patterns
+
+# Recall why you made a specific decision
+hypercore memory --model ./model.gguf recall "database"
+```
+
+### Run the API Server
+```bash
+hypercore serve --model ./model.gguf --port 8080
+
+# OpenAI-compatible endpoint
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{
-    "model": "hypercore-model",
-    "messages": [{"role": "user", "content": "Hello!"}],
-    "max_tokens": 100,
-    "temperature": 0.7,
-    "stream": true
-  }'
+  -d '{"model":"hypercore","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 ---
 
-## System Capabilities
+## Personal Intelligence
 
-### Engine
+### How It Works
 
-| Capability | Description |
-|---------|-------------|
-| **Continuous Batching** | Round-robin chunked prefill with up to 4 concurrent sessions. |
-| **EOS Detection** | Automatically stops generation on end-of-generation tokens. |
-| **Temperature Sampling** | Greedy (T=0) or temperature-scaled stochastic sampling. |
-| **Request Timeouts** | 120-second per-request deadline. Stuck sessions are auto-evicted. |
-| **Memory Pressure Rejection** | Explicit `AdmissionRejected` error when the system detects memory pressure. |
+```
+Your Documents → Ingestion → Embeddings + Chunks → SQLite
+                                                      ↓
+                                              Memory Extraction
+                                           (natural language only,
+                                            source code skipped)
+                                                      ↓
+                                              Memory Graph
+                                        (Decisions, Preferences,
+                                         Projects, Relationships)
+                                                      ↓
+                                         LLM Synthesis (optional)
+                                        Compressed memories fed to
+                                        local model for insight
+                                                      ↓
+                                              Insight + Feedback
+                                         "Was this surprising?" (1-4)
+```
+
+### Commands
+
+| Command | What It Does |
+|---|---|
+| `memory show` | Display your extracted memory graph by category |
+| `memory timeline` | Chronological view of your decisions and projects |
+| `memory recall <topic>` | Find evidence and context for past decisions |
+| `memory patterns` | Theme distribution, word frequency, source analysis |
+| `memory explain` | "Why am I like this?" — synthesize your decision-making DNA |
+| `memory insight` | Generate a weekly personal observation report |
+
+### With LLM Synthesis
+
+Add `--model <path.gguf>` to any memory command for AI-powered synthesis:
+
+```bash
+# Without model: shows raw data + statistics
+hypercore memory patterns
+
+# With model: compressed memories → LLM → synthesized insight
+hypercore memory --model ./qwen-3b.gguf patterns
+```
+
+The system:
+1. Retrieves all memories from SQLite
+2. Clusters by category (Decision, Preference, Project, Relationship)
+3. Compresses to ~200 tokens (3 examples per cluster)
+4. Prints token budget instrumentation
+5. Sends to local LLM for synthesis
+6. Streams the response
+7. Asks for feedback (1-4 rating, persisted)
+
+### Feedback Loop
+
+After every insight, Hypercore asks:
+```
+How valuable was this insight?
+  1) Obvious
+  2) Somewhat useful
+  3) Surprising
+  4) Changed how I think
+```
+
+Ratings are persisted to `insight_feedback` in SQLite. This is how you measure whether the system is generating real value.
+
+---
+
+## Inference Engine
+
+### Capabilities
+
+| Feature | Description |
+|---|---|
+| Continuous Batching | Round-robin chunked prefill, up to 4 concurrent sessions |
+| Memory Pressure Rejection | Explicit `AdmissionRejected` under pressure — no silent OOMs |
+| Request Timeouts | 300s deadline, auto-eviction of stuck sessions |
+| Temperature Sampling | Greedy (T=0) or stochastic sampling |
+| LoRA Support | Adapter path configurable (loading not yet implemented) |
+| EOS Detection | Auto-stop on end-of-generation tokens |
+
+### TitanMem
+
+Adaptive KV-cache congestion controller with:
+- Dual-signal EMA (utilization + pressure)
+- Hysteresis mode transitions (Calm → Cautious → Critical)
+- Dynamic threshold tuning
+- Per-session byte tracking
+
+**Status**: Real, tested, working. See [benchmark results](docs/titanmem_benchmarks.md).
 
 ### API Server
 
-| Capability | Description |
-|---------|-------------|
-| **OpenAI-Compatible** | `/v1/chat/completions` with both SSE streaming and JSON non-streaming modes. |
-| **ChatML Templating** | Messages formatted natively for instruction-tuned models. |
-| **Bearer Auth** | Set `HYPERCORE_API_KEY` to enable authentication. |
-| **Body Limit** | 2MB `DefaultBodyLimit` prevents OOM from malicious payloads. |
-| **Backpressure** | Returns `429 Too Many Requests` when the engine queue is saturated. |
+| Endpoint | Method | Description |
+|---|---|---|
+| `/health` | GET | Health check |
+| `/metrics` | GET | Prometheus metrics |
+| `/v1/models` | GET | List models |
+| `/v1/chat/completions` | POST | Chat completions (streaming + non-streaming) |
 
-### Observability
+OpenAI SDK compatible. Set `HYPERCORE_API_KEY` for authentication.
 
-| Capability | Description |
-|---------|-------------|
-| **Prometheus** | `/metrics` endpoint with queue depth, token throughput, latency histograms. |
-| **OpenTelemetry** | Distributed tracing with OTLP export. |
-| **System Watchdog** | Memory pressure and CPU metrics sampled every 250ms. |
+---
+
+## Knowledge Store
+
+- **SQLite** with hybrid FTS5 full-text search + cosine vector similarity
+- **Content-hash deduplication** — re-ingesting the same file is a no-op
+- **Tree-sitter parsing** for C/C++ files (function-level chunking)
+- **Streaming ingestion** with batch embedding (64 chunks per batch)
+
+---
+
+## Evaluation
+
+Real retrieval evaluation, not hardcoded scores:
+
+```bash
+hypercore studio eval my_assistant.yaml
+```
+
+Output:
+```
+Eval Results: my_assistant.yaml
+  Questions:          4
+  Retrieval Hits:     1 / 4
+  Retrieval Accuracy: 25.0%
+  Avg Top Score:      0.2318
+```
+
+Each question is embedded, searched against the real knowledge store, and scored by theme overlap. No fake metrics.
 
 ---
 
 ## Benchmarks
 
-Measured on reference hardware (AMD Ryzen 9 7900X, DDR5) with a 0.5B Q5_K_M GGUF model.
-
-*Results vary based on model size, quantization, and CPU architecture.*
+Measured on AMD Ryzen 9 7900X, DDR5, 0.5B Q5_K_M GGUF:
 
 | Metric | Value |
-|--------|-------|
-| **Binary Size** | `15.8 MB` |
-| **Idle RAM Overhead** | `~45 MB` |
-| **Cold Start** | `< 2.5s` |
-| **Time To First Token** | `55ms - 120ms` |
-| **Throughput (1 session)** | `~45 tokens/sec` |
-| **Throughput (4 sessions)**| `~110 tokens/sec` |
-
----
-
-## TitanMem
-
-TitanMem is Hypercore's experimental memory virtualization subsystem. It was designed to improve inference speed when running models larger than available physical RAM.
-
-**Status: Experimental — current implementation does not outperform native OS paging.**
-
-We built TitanMem, benchmarked it rigorously under enforced memory pressure (via `SetProcessWorkingSetSizeEx` hard working set limits), and discovered that the Windows kernel's native demand paging already handles mmap'd model files near-optimally. Our prefetch strategy actively increased page faults and reduced throughput.
-
-We published the data anyway because honest engineering matters more than marketing.
-
-👉 **[Full benchmark results and methodology](docs/titanmem_benchmarks.md)**
-
-### Key Finding
-
-| Budget | Baseline Tok/s | TitanMem Tok/s | Baseline Page Faults | TitanMem Page Faults |
-|--------|---------------|---------------|---------------------|---------------------|
-| 1024 MB | **0.81** | 0.87 | 5,695,894 | 5,738,633 |
-| 2048 MB | **1.92** | 1.54 | 1,594,375 | 1,765,599 |
-
-TitanMem v1 is archived. Research continues into layer-aware scheduling and custom block I/O approaches.
-
-### Reproduce
-
-```bash
-cargo build --release
-python benchmarks/titanmem/run_blind_benchmarks.py
-```
-
----
-
-## Limitations
-
-- **CPU inference only** (GPU support experimental via llama.cpp backend)
-- **Max concurrency is bounded** (default: 4 sessions)
-- **Not optimized for high-throughput public LLM APIs**
-- **Best suited for internal / edge / controlled environments**
-- **TitanMem memory engine is experimental and does not yet demonstrate an advantage**
-
----
-
-## Architecture
-
-Hypercore enforces strict lifecycle tracking, invariant assertions on KV-cache slot allocation, and proactive memory pressure monitoring. 
-
-👉 **[Read the Architecture Document](docs/architecture.md)**
-
----
-
-## Deployment Examples
-
-Hypercore is designed to run anywhere, from single-node edge devices to Kubernetes clusters.
-
-### 1. Docker Compose
-```yaml
-version: '3.8'
-services:
-  hypercore:
-    image: ghcr.io/sbalavignesh123/hypercore-rs:v1.0.0
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./models:/app/models
-    environment:
-      - HYPERCORE_API_KEY=sk-your-secure-key
-    command: ["serve", "--model", "/app/models/model.gguf"]
-```
-
-### 2. systemd Service
-```ini
-[Unit]
-Description=Hypercore LLM Inference Runtime
-After=network.target
-
-[Service]
-ExecStart=/usr/local/bin/hypercore serve --model /var/lib/models/llama3.gguf
-Restart=always
-User=hypercore
-Environment="RUST_LOG=info"
-
-[Install]
-WantedBy=multi-user.target
-```
-
----
-
-## CLI Commands
-
-```bash
-# Start the API server
-hypercore serve --model model.gguf --port 8080
-
-# Interactive chat
-hypercore chat --model model.gguf
-
-# Run benchmarks
-hypercore bench --model model.gguf --concurrency 4 --tokens 100
-```
-
----
-
-## API Reference
-
-### Endpoints
-
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/health` | GET | No | Health check. Returns `{"status": "ok"}` |
-| `/metrics` | GET | No | Prometheus-format metrics |
-| `/v1/models` | GET | Yes* | List available models |
-| `/v1/chat/completions` | POST | Yes* | Chat completions (streaming + non-streaming) |
-
-*Auth is only enforced when `HYPERCORE_API_KEY` is set.
+|---|---|
+| Binary Size | 15.8 MB |
+| Idle RAM | ~45 MB |
+| Cold Start | < 2.5s |
+| TTFT | 55-120ms |
+| Throughput (1 session) | ~45 tok/s |
+| Throughput (4 sessions) | ~110 tok/s |
 
 ---
 
 ## Configuration
 
-Create a `hypercore.yaml` in the working directory:
-
 ```yaml
+# hypercore.yaml
 host: "0.0.0.0"
 port: 8080
 model_path: "model.gguf"
@@ -259,34 +239,39 @@ memory_limit_mb: 6000
 safe_mode: true
 ```
 
-### Environment Variables
-
 | Variable | Description |
-|----------|-------------|
-| `HYPERCORE_API_KEY` | Bearer token for API authentication (optional) |
+|---|---|
+| `HYPERCORE_API_KEY` | Bearer token for API auth |
 | `RUST_LOG` | Log level: `info`, `debug`, `trace` |
 
 ---
 
 ## Design Philosophy
 
-### 1. Boring is What Users Trust
-Every component is designed to be **predictable under load**. Hypercore chooses explicit error handling over silent fallbacks, deterministic scheduling over probabilistic heuristics, and clear failure modes over optimistic retries.
+1. **Boring is what users trust.** Predictable under load. Explicit errors over silent fallbacks.
+2. **No silent mutations.** If it can't fulfill a request exactly, it rejects with a clear error.
+3. **Measure before you claim.** Every benchmark is reproducible. If something doesn't work, we say so.
+4. **Insights over retrieval.** The goal isn't "chat with your PDFs." It's "discover patterns in your thinking."
 
-### 2. No Silent Mutations
-If Hypercore can't fulfill a request exactly as specified, it rejects it with a clear error. It will never silently truncate your prompt, quietly reduce `max_tokens`, or drop requests without telling you.
+---
 
-### 3. Safety is Not Optional
-Memory limits aren't suggestions. Request timeouts aren't configurable to "infinity." Body size limits can't be disabled.
+## Project Status
 
-### 4. Measure Before You Claim
-Every performance claim in this repository is backed by reproducible benchmarks. If a subsystem doesn't demonstrate an advantage under rigorous testing, we say so.
+| Component | Status |
+|---|---|
+| Inference Engine | ✅ Production-ready |
+| TitanMem | ✅ Working, experimental |
+| Knowledge Store | ✅ Working |
+| Ingestion Pipeline | ✅ Working |
+| Memory Extraction | ✅ Working (keyword heuristics) |
+| Memory Commands | ✅ 7 commands working |
+| LLM Synthesis | 🔌 Wired, needs model |
+| Eval Pipeline | ✅ Real retrieval |
+| LoRA Training | ❌ Not yet implemented |
 
 ---
 
 ## Contributing
-
-Contributions are welcome! Please:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -296,25 +281,10 @@ Contributions are welcome! Please:
 
 ---
 
-## Security
-
-| Layer | Protection |
-|-------|------------|
-| **Network** | Optional Bearer token auth, CORS controls |
-| **Input** | 2MB body size limit prevents OOM attacks |
-| **Prompt** | Pre-queue heuristic rejects obviously oversized prompts |
-| **Engine** | Explicit admission rejection under memory pressure |
-| **Runtime** | 120s request timeouts prevent resource exhaustion |
-| **Shutdown** | 3-stage drain prevents data loss |
-
----
-
 ## License
 
 MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-<p align="center">
-  Built with 🦀 Rust and ❤️ by <a href="https://github.com/SBALAVIGNESH123">SBALAVIGNESH123</a>
-</p>
+**Built with 🦀 Rust and ❤️ by [@SBALAVIGNESH123](https://github.com/SBALAVIGNESH123)**

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "stress-1",
+    "prompt": "Write a 500 word essay about the history of Rome.",
+    "max_tokens": 500
+  },
+  {
+    "id": "stress-2",
+    "prompt": "Explain quantum computing in extreme detail.",
+    "max_tokens": 500
+  },
+  {
+    "id": "stress-3",
+    "prompt": "Generate a short story about a space explorer.",
+    "max_tokens": 500
+  },
+  {
+    "id": "stress-4",
+    "prompt": "Describe the architecture of a modern CPU.",
+    "max_tokens": 500
+  }
+]

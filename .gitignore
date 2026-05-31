@@ -31,3 +31,11 @@ logs/
 # Temporary
 tmp/
 temp/
+
+# Database and cache
+*.db
+.fastembed_cache/
+
+# Generated reports
+*_report.json
+*_eval_report.json

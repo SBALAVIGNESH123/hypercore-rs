@@ -4,6 +4,7 @@ use crate::metrics::events::{dispatch, MetricEvent};
 use crate::runtime::governor::EngineMetrics;
 use crate::runtime::invariant::InvariantGuard;
 use crate::runtime::{RuntimeMode, RuntimeState};
+use crate::titanmem::{KvCacheController, KvCacheObserver, KvModelConfig, KvPhase};
 use anyhow::Result;
 use llama_cpp_2::context::params::LlamaContextParams;
 use llama_cpp_2::llama_backend::LlamaBackend;
@@ -53,6 +54,8 @@ pub struct LlamaEngine {
     state_rx: watch::Receiver<RuntimeState>,
     metrics_tx: watch::Sender<EngineMetrics>,
     request_rx: mpsc::Receiver<InferenceRequest>,
+    kv_controller: KvCacheController,
+    lora_adapter: Option<String>,
 }
 
 impl LlamaEngine {
@@ -63,6 +66,10 @@ impl LlamaEngine {
         state_rx: watch::Receiver<RuntimeState>,
         metrics_tx: watch::Sender<EngineMetrics>,
         request_rx: mpsc::Receiver<InferenceRequest>,
+        kv_config: KvModelConfig,
+        max_kv_bytes: usize,
+        titanmem_enabled: bool,
+        lora_adapter: Option<String>,
     ) -> Self {
         Self {
             model_path,
@@ -71,6 +78,8 @@ impl LlamaEngine {
             state_rx,
             metrics_tx,
             request_rx,
+            kv_controller: KvCacheController::new(kv_config, max_kv_bytes, titanmem_enabled),
+            lora_adapter,
         }
     }
 
@@ -120,6 +129,13 @@ impl LlamaEngine {
         let model = LlamaModel::load_from_file(&backend, &self.model_path, &model_params)
             .map_err(|e| RuntimeFailure::ModelFault(e.to_string()))?;
 
+        if let Some(adapter) = &self.lora_adapter {
+            warn!("LlamaEngine: LoRA adapter '{}' specified but adapter loading is not yet implemented. Running base model only.", adapter);
+            // TODO: Implement real LoRA adapter loading when llama-cpp-2 crate exposes the API.
+            // model.apply_lora_from_file(adapter, 1.0, 4)
+            //     .map_err(|e| RuntimeFailure::ModelFault(e.to_string()))?;
+        }
+
         // Use config-driven context size and thread count
         let n_ctx = self.context_size;
         let n_threads = self.n_threads;
@@ -139,8 +155,8 @@ impl LlamaEngine {
         let mut active_requests: Vec<ActiveRequest> = Vec::new();
         let mut batch = llama_cpp_2::llama_batch::LlamaBatch::new(1024, 1);
 
-        // Request timeout: 120 seconds per request
-        let request_timeout = std::time::Duration::from_secs(120);
+        // Request timeout: 300 seconds for CPU inference on consumer hardware
+        let request_timeout = std::time::Duration::from_secs(300);
 
         loop {
             // 0. Process Cancellations first so we don't deadlock if Paused
@@ -151,6 +167,7 @@ impl LlamaEngine {
                     info!("[Session {}] Cancelled.", ar.req.session_id);
                     ar.req.timeline.transition(RequestState::Cancelled);
                     Self::dump_timeline(&ar.req);
+                    self.kv_controller.on_kv_evict(ar.req.session_id as u64);
                     let _ = ctx.clear_kv_cache_seq(Some(ar.kv_slot as u32), None, None);
                     active_requests.remove(i);
                     continue;
@@ -253,6 +270,9 @@ impl LlamaEngine {
                             }
                         }
 
+                        let prompt_len = tokens.len();
+                        self.kv_controller.on_kv_allocate(req.session_id as u64, prompt_len * 100);
+
                         active_requests.push(ActiveRequest {
                             _kv_guard: InvariantGuard::acquire_kv_cache(req.session_id as u64),
                             req,
@@ -285,12 +305,13 @@ impl LlamaEngine {
             while ti < active_requests.len() {
                 if now_instant >= active_requests[ti].deadline {
                     let ar = &mut active_requests[ti];
-                    warn!("[Session {}] TIMEOUT after 120s.", ar.req.session_id);
+                    warn!("[Session {}] TIMEOUT after 300s.", ar.req.session_id);
                     ar.req.timeline.transition(RequestState::Failed);
                     let _ = ar.req.response_tx.try_send(Err(RuntimeFailure::Timeout(
-                        "Request exceeded 120s timeout".into(),
+                        "Request exceeded 300s timeout".into(),
                     )));
                     Self::dump_timeline(&ar.req);
+                    self.kv_controller.on_kv_evict(ar.req.session_id as u64);
                     let _ = ctx.clear_kv_cache_seq(Some(ar.kv_slot as u32), None, None);
                     active_requests.remove(ti);
                     continue;
@@ -315,6 +336,14 @@ impl LlamaEngine {
             batch.clear();
             let mut batch_indices = Vec::new();
 
+            // Phase A: Precompute Scheduling Decision
+            let active_ids: Vec<u64> = active_requests.iter().map(|ar| ar.req.session_id as u64).collect();
+            let schedule = self.kv_controller.get_schedule(&active_ids);
+            
+            // Log Snapshot
+            let snapshot = self.kv_controller.get_snapshot(active_requests.len());
+            tracing::info!("SchedulerSnapshot: {:?}", snapshot);
+
             let chunk_size = 256;
             let max_batch = 1024;
             let mut added_this_step = 0;
@@ -325,6 +354,11 @@ impl LlamaEngine {
                 made_progress = false;
                 for (req_idx, ar) in active_requests.iter_mut().enumerate() {
                     if ar.pending_tokens.is_empty() || added_this_step >= max_batch {
+                        continue;
+                    }
+
+                    if !schedule.allowed.contains(&(ar.req.session_id as u64)) {
+                        tracing::debug!("[Session {}] Throttled by TitanMem Schedule.", ar.req.session_id);
                         continue;
                     }
 
@@ -438,12 +472,14 @@ impl LlamaEngine {
                             );
                             ar.req.timeline.transition(RequestState::Completed);
                             Self::dump_timeline(&ar.req);
+                            self.kv_controller.on_kv_evict(ar.req.session_id as u64);
                             let _ = ctx.clear_kv_cache_seq(Some(ar.kv_slot as u32), None, None);
                             active_requests.remove(i);
                             continue;
                         }
 
                         ar.pending_tokens.push(next_token);
+                        self.kv_controller.on_kv_extend(ar.req.session_id as u64, 1, KvPhase::Decode);
 
                         let token_bytes = model
                             .token_to_piece_bytes(next_token, 64, false, None)
@@ -471,6 +507,7 @@ impl LlamaEngine {
                                 info!("[Session {}] Client dropped.", ar.req.session_id);
                                 ar.req.timeline.transition(RequestState::Dropped);
                                 Self::dump_timeline(&ar.req);
+                                self.kv_controller.on_kv_evict(ar.req.session_id as u64);
                                 let _ = ctx.clear_kv_cache_seq(Some(ar.kv_slot as u32), None, None);
                                 active_requests.remove(i);
                                 continue;
@@ -487,6 +524,7 @@ impl LlamaEngine {
                             info!("[Session {}] Completed.", ar.req.session_id);
                             ar.req.timeline.transition(RequestState::Completed);
                             Self::dump_timeline(&ar.req);
+                            self.kv_controller.on_kv_evict(ar.req.session_id as u64);
                             let _ = ctx.clear_kv_cache_seq(Some(ar.kv_slot as u32), None, None);
                             active_requests.remove(i);
                             continue;

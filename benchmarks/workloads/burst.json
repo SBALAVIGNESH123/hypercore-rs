@@ -1,0 +1,27 @@
+[
+  {
+    "id": "burst-1",
+    "prompt": "What is 2+2?",
+    "max_tokens": 10
+  },
+  {
+    "id": "burst-2",
+    "prompt": "Explain gravity in one sentence.",
+    "max_tokens": 20
+  },
+  {
+    "id": "burst-3",
+    "prompt": "Name three colors.",
+    "max_tokens": 15
+  },
+  {
+    "id": "burst-4",
+    "prompt": "Who wrote Hamlet?",
+    "max_tokens": 10
+  },
+  {
+    "id": "burst-5",
+    "prompt": "Capital of France?",
+    "max_tokens": 5
+  }
+]

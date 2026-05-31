@@ -1,0 +1,22 @@
+[
+  {
+    "question": "What are my most important projects?",
+    "expected_themes": ["HyperCore", "TitanMem", "Rust CLI"],
+    "source_doc": "my_projects.md"
+  },
+  {
+    "question": "How do I typically write technical documents?",
+    "expected_themes": ["Direct", "Brutally honest", "Focus on user outcomes"],
+    "source_doc": "writing_style_guide.md"
+  },
+  {
+    "question": "What decisions have I repeatedly made?",
+    "expected_themes": ["Local-first", "No cloud dependencies", "Prioritize latency over massive parameters"],
+    "source_doc": "architecture_decisions.md"
+  },
+  {
+    "question": "What technologies do I consistently prefer?",
+    "expected_themes": ["Rust", "SQLite", "llama.cpp", "PEFT/LoRA"],
+    "source_doc": "tech_stack.md"
+  }
+]

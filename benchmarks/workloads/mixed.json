@@ -1,0 +1,27 @@
+[
+  {
+    "id": "mixed-1",
+    "prompt": "What is 2+2?",
+    "max_tokens": 10
+  },
+  {
+    "id": "mixed-2",
+    "prompt": "Explain the entire plot of Lord of the Rings.",
+    "max_tokens": 400
+  },
+  {
+    "id": "mixed-3",
+    "prompt": "Who is the CEO of Tesla?",
+    "max_tokens": 5
+  },
+  {
+    "id": "mixed-4",
+    "prompt": "Write a detailed guide on how to build a compiler in Rust.",
+    "max_tokens": 500
+  },
+  {
+    "id": "mixed-5",
+    "prompt": "What is the boiling point of water?",
+    "max_tokens": 15
+  }
+]

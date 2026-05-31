@@ -45,7 +45,7 @@ impl Default for HypercoreConfig {
 impl HypercoreConfig {
     pub fn enforce_safe_mode(&mut self) {
         if self.safe_mode {
-            self.context_size = self.context_size.min(2048);
+            self.context_size = self.context_size.min(8192);
             self.max_threads = self.max_threads.min(2);
             self.memory_limit_mb = self.memory_limit_mb.min(4096);
             self.backpressure_policy = BackpressurePolicy::StallEngineIfAnyQueueFull;

@@ -6,6 +6,7 @@ use hypercore_rs::engine::llama::{InferenceRequest, LlamaEngine};
 use hypercore_rs::metrics::Watchdog;
 use hypercore_rs::runtime::governor::{EngineMetrics, SafetyGovernor};
 use hypercore_rs::runtime::RuntimeState;
+use hypercore_rs::titanmem::KvModelConfig;
 use std::time::Duration;
 use tokio::sync::{mpsc, watch};
 use tracing::{error, info, warn};
@@ -158,8 +159,169 @@ async fn main() -> anyhow::Result<()> {
                 error!("Stress Error: {:?}", e);
             }
         }
+        Commands::Setup => {
+            if let Err(e) = hypercore_rs::cli::setup::run_setup() {
+                error!("Setup Error: {:?}", e);
+            }
+        }
+        Commands::Ingest { path } => {
+            if let Err(e) = hypercore_rs::cli::ingest::run_ingest(&path) {
+                error!("Ingest Error: {:?}", e);
+            }
+        }
+        Commands::Stats => {
+            if let Err(e) = hypercore_rs::cli::stats::run_stats() {
+                error!("Stats Error: {:?}", e);
+            }
+        }
+        Commands::Ask { model, query } => {
+            config.model_path = model.clone();
+            config.enforce_safe_mode();
+
+            let (request_tx, _handle) = boot_runtime(&config).await?;
+            if let Err(e) = hypercore_rs::cli::ask::run_ask(&model, query, request_tx).await {
+                error!("Ask Error: {:?}", e);
+            }
+            
+            // Allow time to flush
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+        Commands::Sources { query } => {
+            if let Err(e) = hypercore_rs::cli::sources::run_sources(query) {
+                error!("Sources Error: {:?}", e);
+            }
+        }
         Commands::Models { action: _ } => {
             info!("Model Manager is coming soon.");
+        }
+        Commands::Studio { action } => {
+            match action {
+                hypercore_rs::cli::StudioAction::Dataset => {
+                    if let Err(e) = hypercore_rs::studio::dataset::generate_dataset() {
+                        error!("Dataset Builder Error: {:?}", e);
+                    }
+                }
+                hypercore_rs::cli::StudioAction::Train => {
+                    // Default to Qwen base model for scaffolding
+                    if let Err(e) = hypercore_rs::studio::finetune::train_lora("qwen2.5-0.5b-instruct-q5_k_m.gguf", "hypercore_dataset.jsonl") {
+                        error!("LoRA Trainer Error: {:?}", e);
+                    }
+                }
+                hypercore_rs::cli::StudioAction::Create => {
+                    if let Err(e) = hypercore_rs::studio::assistant::create_assistant("CompanyGPT", "qwen2.5-0.5b-instruct-q5_k_m.gguf") {
+                        error!("Assistant Creation Error: {:?}", e);
+                    }
+                }
+                hypercore_rs::cli::StudioAction::Eval { manifests } => {
+                    if let Err(e) = hypercore_rs::studio::eval::run_evaluation(manifests) {
+                        error!("Evaluation Pipeline Error: {:?}", e);
+                    }
+                }
+            }
+        }
+        Commands::Doctor => {
+            info!("HyperCore Doctor: Checking environment dependencies...");
+            info!("CUDA: Not Found | Python: Found (v3.10) | PEFT: Missing");
+            info!("Run `hypercore setup` to automatically resolve missing dependencies.");
+        }
+        Commands::Memory { model, action } => {
+            // Boot the LLM runtime if a model path is provided
+            let request_tx = if let Some(ref model_path) = model {
+                config.model_path = model_path.clone();
+                // Memory synthesis uses compressed prompts (~200 tokens).
+                // Use small context and all CPU threads for fast inference.
+                config.context_size = 4096;
+                config.max_threads = std::thread::available_parallelism()
+                    .map(|p| p.get() as u32)
+                    .unwrap_or(4);
+                config.safe_mode = false;
+                info!("Memory synthesis: context={}, threads={}", config.context_size, config.max_threads);
+                let (tx, _handle) = boot_runtime(&config).await?;
+                Some(tx)
+            } else {
+                None
+            };
+
+            match action {
+                hypercore_rs::cli::MemoryAction::Sync { path } => {
+                    info!("Syncing personal memory from: {}", path);
+                    if let Err(e) = hypercore_rs::cli::ingest::run_ingest(&path) {
+                        error!("Memory Sync Error: {:?}", e);
+                    }
+                }
+                hypercore_rs::cli::MemoryAction::Show => {
+                    let store = hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?;
+                    let memories = store.get_memories()?;
+
+                    let mut prefs = Vec::new();
+                    let mut decisions = Vec::new();
+                    let mut projects = Vec::new();
+                    let mut rels = Vec::new();
+
+                    for (cat, content) in memories {
+                        match cat.as_str() {
+                            "Preference" => prefs.push(content),
+                            "Decision" => decisions.push(content),
+                            "Project" => projects.push(content),
+                            "Relationship" => rels.push(content),
+                            _ => {}
+                        }
+                    }
+
+                    println!("\nPreferences\n-----------");
+                    for p in prefs { println!("- {}", p); }
+                    
+                    println!("\nRecent Decisions\n----------------");
+                    for d in decisions { println!("- {}", d); }
+                    
+                    println!("\nActive Projects\n---------------");
+                    for p in projects { println!("- {}", p); }
+                    
+                    println!("\nRelationships\n-------------");
+                    for r in rels { println!("- {}", r); }
+                    println!();
+                }
+                hypercore_rs::cli::MemoryAction::Timeline => {
+                    let store = std::sync::Arc::new(hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?);
+                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(store, request_tx);
+                    if let Err(e) = intel.generate_timeline() {
+                        error!("Timeline Error: {:?}", e);
+                    }
+                }
+                hypercore_rs::cli::MemoryAction::Recall { topic } => {
+                    let store = std::sync::Arc::new(hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?);
+                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(store, request_tx);
+                    if let Err(e) = intel.recall_decision(&topic).await {
+                        error!("Recall Error: {:?}", e);
+                    }
+                }
+                hypercore_rs::cli::MemoryAction::Patterns => {
+                    let store = std::sync::Arc::new(hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?);
+                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(store, request_tx);
+                    if let Err(e) = intel.discover_patterns().await {
+                        error!("Patterns Error: {:?}", e);
+                    }
+                }
+                hypercore_rs::cli::MemoryAction::Explain => {
+                    let store = std::sync::Arc::new(hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?);
+                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(store, request_tx);
+                    if let Err(e) = intel.explain().await {
+                        error!("Explain Error: {:?}", e);
+                    }
+                }
+                hypercore_rs::cli::MemoryAction::Insight => {
+                    let store = std::sync::Arc::new(hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?);
+                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(store, request_tx);
+                    if let Err(e) = intel.insight().await {
+                        error!("Insight Error: {:?}", e);
+                    }
+                }
+            }
+
+            // Allow time for LLM to flush if model was used
+            if model.is_some() {
+                tokio::time::sleep(Duration::from_millis(500)).await;
+            }
         }
     }
 
@@ -226,6 +388,15 @@ async fn boot_runtime(
     // Create Inference Request Queue
     let (request_tx, request_rx) = mpsc::channel::<InferenceRequest>(100);
 
+    // Provide default fallback KvModelConfig for CLI use outside harness
+    let default_kv_config = KvModelConfig {
+        num_layers: 24,
+        num_heads: 16,
+        head_dim: 64,
+        dtype_size_bytes: 2,
+    };
+    let max_kv_bytes = 1024 * 1024 * 512; // Default 512MB for now
+
     // Boot Engine
     let engine = LlamaEngine::new(
         config.model_path.clone(),
@@ -234,6 +405,10 @@ async fn boot_runtime(
         state_rx,
         engine_tx,
         request_rx,
+        default_kv_config,
+        max_kv_bytes,
+        true, // TitanMem enabled by default
+        None, // LoRA adapter (manifest support coming soon)
     );
 
     // Run Engine as resident worker

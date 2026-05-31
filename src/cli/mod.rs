@@ -1,6 +1,11 @@
 pub mod bench;
 pub mod chat;
 pub mod stress;
+pub mod setup;
+pub mod ingest;
+pub mod ask;
+pub mod stats;
+pub mod sources;
 
 use clap::{Parser, Subcommand};
 
@@ -69,11 +74,65 @@ pub enum Commands {
         #[arg(short, long, default_value_t = 30)]
         duration: u64,
     },
+    /// Setup HyperCore (e.g., download models)
+    Setup,
+    /// Ingest a local directory into the knowledge base
+    Ingest {
+        #[arg(short, long)]
+        path: String,
+    },
+    /// Ask a question against your local knowledge base
+    Ask {
+        #[arg(short, long)]
+        model: String,
+        
+        query: String,
+    },
+    /// Show stats about the local knowledge base
+    Stats,
+    /// View relevant file paths for a query
+    Sources {
+        query: String,
+    },
     /// Manage local models
     Models {
         #[command(subcommand)]
         action: ModelAction,
     },
+    /// HyperCore Studio tools
+    Studio {
+        #[command(subcommand)]
+        action: StudioAction,
+    },
+    /// Run system diagnostics and environment setup
+    Doctor,
+    /// Manage personal memory synchronization
+    Memory {
+        /// Path to a GGUF model for LLM-powered synthesis
+        #[arg(short, long)]
+        model: Option<String>,
+
+        #[command(subcommand)]
+        action: MemoryAction,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum MemoryAction {
+    /// Sync a local directory into the personal memory bank
+    Sync { path: String },
+    /// Show the raw current personal memory graph
+    Show,
+    /// Generate a chronological timeline showing how your work evolved
+    Timeline,
+    /// Recall context and rationale for a specific historical decision
+    Recall { topic: String },
+    /// Discover recurring themes and habits in your memory graph
+    Patterns,
+    /// "Why am I like this?" — synthesize your deepest decision-making patterns
+    Explain,
+    /// Generate a personal insight report from your recent activity
+    Insight,
 }
 
 #[derive(Subcommand)]
@@ -81,4 +140,20 @@ pub enum ModelAction {
     List,
     Add { url: String },
     Remove { name: String },
+}
+
+#[derive(Subcommand)]
+pub enum StudioAction {
+    /// Generate a training dataset from the knowledge base
+    Dataset,
+    /// Train a LoRA adapter locally
+    Train,
+    /// Create a packaged assistant manifest
+    Create,
+    /// Evaluate an assistant manifest against a benchmark
+    Eval {
+        /// Space separated list of manifests to evaluate and compare
+        #[arg(required = true)]
+        manifests: Vec<String>,
+    },
 }

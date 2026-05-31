@@ -45,6 +45,18 @@ opentelemetry = "0.32.0"
 opentelemetry_sdk = "0.32.1"
 opentelemetry-otlp = "0.32.0"
 tracing-opentelemetry = "0.33.0"
-reqwest = { version = "0.13.4", features = ["blocking"] }
+reqwest = { version = "0.13.4", features = ["blocking", "json"] }
+
+# Knowledge Engine (Local RAG)
+fastembed = "5.15.0"
+rusqlite = { version = "0.31", features = ["bundled"] }
+walkdir = "2.5"
+tree-sitter = "0.22"
+tree-sitter-c = "0.21.4"
+tree-sitter-cpp = "0.22.3"
+indicatif = "0.17"
 memmap2 = "0.9.10"
 windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_System_Memory", "Win32_System_ProcessStatus", "Win32_System_Threading", "Win32_Security"] }
+chrono = "0.4.44"
+dirs = "6.0.0"
+sha2 = "0.11.0"
