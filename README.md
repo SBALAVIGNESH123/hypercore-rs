@@ -1,5 +1,9 @@
 # Hypercore
 
+<p align="center">
+  <img src="assets/banner.png" alt="HyperCore Banner" width="800"/>
+</p>
+
 **A local AI that learns from your documents, remembers your decisions, and helps you discover patterns in your own thinking.**
 
 CPU-first LLM inference runtime + personal intelligence system, written in Rust.
