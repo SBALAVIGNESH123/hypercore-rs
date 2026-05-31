@@ -1,6 +1,6 @@
-use hypercore_rs::knowledge::store::SqliteStore;
-use hypercore_rs::knowledge::{VectorStore, route_query, RetrievalEngine};
 use hypercore_rs::knowledge::embed::Embedder;
+use hypercore_rs::knowledge::store::SqliteStore;
+use hypercore_rs::knowledge::{route_query, RetrievalEngine, VectorStore};
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -18,7 +18,7 @@ struct QaResult {
 fn call_gemini(api_key: &str, prompt: &str) -> anyhow::Result<String> {
     let client = Client::new();
     let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={}", api_key);
-    
+
     let body = json!({
         "contents": [{
             "parts": [{"text": prompt}]
@@ -31,13 +31,14 @@ fn call_gemini(api_key: &str, prompt: &str) -> anyhow::Result<String> {
         }
     });
 
-    let res = client.post(&url)
+    let res = client
+        .post(&url)
         .header("Content-Type", "application/json")
         .json(&body)
         .send()?;
 
     let json: serde_json::Value = res.json()?;
-    
+
     if let Some(text) = json["candidates"][0]["content"]["parts"][0]["text"].as_str() {
         Ok(text.to_string())
     } else {
@@ -78,19 +79,19 @@ fn main() -> anyhow::Result<()> {
         "How does work stealing function?",
         "How does threadpool manage threads?",
         "Why is KV cache memory unmapped?",
-        "Where is tensor data stored in memory?"
+        "Where is tensor data stored in memory?",
     ];
 
     let mut results = Vec::new();
 
     println!("Starting Golden Evaluation Loop...");
-    
+
     for (i, q) in questions.iter().enumerate() {
         println!("\n[{}/{}] {}", i + 1, questions.len(), q);
         let start = Instant::now();
-        
+
         let engine = route_query(q);
-        
+
         let search_results = match engine {
             RetrievalEngine::FTS => store.fts_search(q, 5)?,
             RetrievalEngine::Vector => {
@@ -98,17 +99,21 @@ fn main() -> anyhow::Result<()> {
                 store.search(&emb[0], 5)?
             }
         };
-        
+
         let elapsed = start.elapsed();
         let engine_str = match engine {
             RetrievalEngine::FTS => "FTS",
             RetrievalEngine::Vector => "Vector",
         };
-        println!("   -> Routed to: {} (took {}ms)", engine_str, elapsed.as_millis());
-        
+        println!(
+            "   -> Routed to: {} (took {}ms)",
+            engine_str,
+            elapsed.as_millis()
+        );
+
         let mut context_files = Vec::new();
         let mut context_text = String::new();
-        
+
         for (j, res) in search_results.iter().enumerate() {
             context_files.push(res.doc_path.clone());
             context_text.push_str(&format!("--- FILE: {} ---\n{}\n\n", res.doc_path, res.text));
@@ -116,7 +121,7 @@ fn main() -> anyhow::Result<()> {
                 println!("      [hit] {}", res.doc_path);
             }
         }
-        
+
         let mut generated_answer = String::from("[SKIPPED - NO API KEY]");
         if !api_key.is_empty() {
             let prompt = format!("Question: {}\n\nContext:\n{}", q, context_text);
@@ -124,7 +129,7 @@ fn main() -> anyhow::Result<()> {
                 Ok(ans) => {
                     generated_answer = ans;
                     println!("   -> Answer generated.");
-                },
+                }
                 Err(e) => {
                     generated_answer = format!("API Error: {}", e);
                     println!("   -> Failed to generate answer: {}", e);

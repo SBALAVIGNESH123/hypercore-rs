@@ -37,7 +37,7 @@ impl SqliteStore {
             )",
             [],
         )?;
-        
+
         conn.execute(
             "CREATE TABLE IF NOT EXISTS memory_graph (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,7 +65,7 @@ impl SqliteStore {
                 file_path, content,
                 tokenize='unicode61 tokenchars ''_'''
             )",
-            []
+            [],
         )?;
 
         conn.execute(
@@ -91,7 +91,9 @@ impl SqliteStore {
         )?;
 
         // Retroactively index any existing chunks if FTS index is empty
-        let count: i64 = conn.query_row("SELECT count(*) FROM chunks_fts", [], |row| row.get(0)).unwrap_or(0);
+        let count: i64 = conn
+            .query_row("SELECT count(*) FROM chunks_fts", [], |row| row.get(0))
+            .unwrap_or(0);
         if count == 0 {
             conn.execute(
                 "INSERT INTO chunks_fts(rowid, file_path, content) SELECT id, file_path, content FROM chunks",
@@ -131,7 +133,12 @@ impl SqliteStore {
         }
     }
 
-    pub fn insert_memory(&self, category: &str, content: &str, source_file: &str) -> anyhow::Result<()> {
+    pub fn insert_memory(
+        &self,
+        category: &str,
+        content: &str,
+        source_file: &str,
+    ) -> anyhow::Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "INSERT INTO memory_graph (category, content, source_file) VALUES (?1, ?2, ?3)",
@@ -142,7 +149,8 @@ impl SqliteStore {
 
     pub fn get_memories(&self) -> anyhow::Result<Vec<(String, String)>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT category, content FROM memory_graph ORDER BY id ASC")?;
+        let mut stmt =
+            conn.prepare("SELECT category, content FROM memory_graph ORDER BY id ASC")?;
         let rows = stmt.query_map([], |row| {
             let category: String = row.get(0)?;
             let content: String = row.get(1)?;
@@ -159,7 +167,7 @@ impl SqliteStore {
     pub fn get_memories_full(&self) -> anyhow::Result<Vec<(String, String, String, String)>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT category, content, source_file, timestamp FROM memory_graph ORDER BY id ASC"
+            "SELECT category, content, source_file, timestamp FROM memory_graph ORDER BY id ASC",
         )?;
         let rows = stmt.query_map([], |row| {
             let category: String = row.get(0)?;
@@ -176,7 +184,12 @@ impl SqliteStore {
         Ok(memories)
     }
 
-    pub fn insert_feedback(&self, insight_type: &str, raw_insight: &str, rating: u8) -> anyhow::Result<()> {
+    pub fn insert_feedback(
+        &self,
+        insight_type: &str,
+        raw_insight: &str,
+        rating: u8,
+    ) -> anyhow::Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "INSERT INTO insight_feedback (insight_type, raw_insight, rating) VALUES (?1, ?2, ?3)",
@@ -188,7 +201,8 @@ impl SqliteStore {
     /// Returns all ingested chunk texts with file path and extension.
     pub fn get_all_chunk_texts(&self) -> anyhow::Result<Vec<(String, String, String)>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT file_path, file_extension, content FROM chunks ORDER BY id ASC")?;
+        let mut stmt =
+            conn.prepare("SELECT file_path, file_extension, content FROM chunks ORDER BY id ASC")?;
         let rows = stmt.query_map([], |row| {
             let file_path: String = row.get(0)?;
             let file_ext: String = row.get(1)?;
@@ -213,7 +227,8 @@ impl SqliteStore {
 impl VectorStore for SqliteStore {
     fn fts_search(&self, query: &str, limit: usize) -> anyhow::Result<Vec<SearchResult>> {
         let conn = self.conn.lock().unwrap();
-        let safe_query = query.split_whitespace()
+        let safe_query = query
+            .split_whitespace()
             .map(|w| format!("\"{}\"", w.replace("\"", "\"\"")))
             .collect::<Vec<_>>()
             .join(" ");
@@ -235,11 +250,11 @@ impl VectorStore for SqliteStore {
             let end_offset: usize = row.get(4)?;
             let text: String = row.get(5)?;
             let rank: f32 = row.get(6)?;
-            
-            // FTS5 rank is more negative for better matches. 
+
+            // FTS5 rank is more negative for better matches.
             // We return -rank so that a higher score is better, similar to cosine similarity.
             let score = -rank;
-            
+
             Ok(SearchResult {
                 doc_path,
                 file_extension,
@@ -255,11 +270,16 @@ impl VectorStore for SqliteStore {
         for row in rows {
             results.push(row?);
         }
-        
+
         Ok(results)
     }
 
-    fn search_routed(&self, query: &str, query_embedding: &[f32], limit: usize) -> anyhow::Result<(Vec<SearchResult>, super::RetrievalEngine)> {
+    fn search_routed(
+        &self,
+        query: &str,
+        query_embedding: &[f32],
+        limit: usize,
+    ) -> anyhow::Result<(Vec<SearchResult>, super::RetrievalEngine)> {
         let engine = super::route_query(query);
         let results = match engine {
             super::RetrievalEngine::FTS => self.fts_search(query, limit)?,
@@ -282,7 +302,10 @@ impl VectorStore for SqliteStore {
             let mut hasher = Sha256::new();
             hasher.update(chunk.text.as_bytes());
             let hash_bytes = hasher.finalize();
-            let chunk_hash = hash_bytes.iter().map(|b| format!("{:02x}", b)).collect::<String>();
+            let chunk_hash = hash_bytes
+                .iter()
+                .map(|b| format!("{:02x}", b))
+                .collect::<String>();
 
             let blob = Self::f32_to_bytes(&chunk.embedding);
             stmt.execute(params![
@@ -305,7 +328,7 @@ impl VectorStore for SqliteStore {
         let mut stmt = conn.prepare(
             "SELECT file_path, file_extension, chunk_index, start_offset, end_offset, content, embedding FROM chunks"
         )?;
-        
+
         let rows = stmt.query_map([], |row| {
             let path: String = row.get(0)?;
             let file_extension: String = row.get(1)?;
@@ -314,33 +337,57 @@ impl VectorStore for SqliteStore {
             let end_offset: usize = row.get(4)?;
             let text: String = row.get(5)?;
             let blob: Vec<u8> = row.get(6)?;
-            Ok((path, file_extension, chunk_index, start_offset, end_offset, text, blob))
+            Ok((
+                path,
+                file_extension,
+                chunk_index,
+                start_offset,
+                end_offset,
+                text,
+                blob,
+            ))
         })?;
 
         let mut results = Vec::new();
         for row in rows {
-            let (doc_path, file_extension, chunk_index, start_offset, end_offset, text, blob) = row?;
+            let (doc_path, file_extension, chunk_index, start_offset, end_offset, text, blob) =
+                row?;
             let embedding = Self::bytes_to_f32(&blob);
             let score = Self::cosine_similarity(query_embedding, &embedding);
             // Apply a minimum score threshold to drop irrelevant chunks
             if score >= 0.0 {
-                results.push(SearchResult { 
-                    doc_path, text, score, chunk_index, start_offset, end_offset, file_extension
+                results.push(SearchResult {
+                    doc_path,
+                    text,
+                    score,
+                    chunk_index,
+                    start_offset,
+                    end_offset,
+                    file_extension,
                 });
             }
         }
 
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results.truncate(limit);
         Ok(results)
     }
 
     fn stats(&self) -> anyhow::Result<StoreStats> {
         let conn = self.conn.lock().unwrap();
-        let documents: usize = conn.query_row("SELECT COUNT(DISTINCT file_path) FROM chunks", [], |row| row.get(0))?;
+        let documents: usize =
+            conn.query_row("SELECT COUNT(DISTINCT file_path) FROM chunks", [], |row| {
+                row.get(0)
+            })?;
         let chunks: usize = conn.query_row("SELECT COUNT(*) FROM chunks", [], |row| row.get(0))?;
-        let last_ingest: String = conn.query_row("SELECT MAX(ingested_at) FROM chunks", [], |row| row.get(0)).unwrap_or_else(|_| "".to_string());
-        
+        let last_ingest: String = conn
+            .query_row("SELECT MAX(ingested_at) FROM chunks", [], |row| row.get(0))
+            .unwrap_or_else(|_| "".to_string());
+
         let size_bytes = if Path::new(&self.db_path).exists() {
             fs::metadata(&self.db_path)?.len()
         } else {

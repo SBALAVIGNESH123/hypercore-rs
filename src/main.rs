@@ -182,7 +182,7 @@ async fn main() -> anyhow::Result<()> {
             if let Err(e) = hypercore_rs::cli::ask::run_ask(&model, query, request_tx).await {
                 error!("Ask Error: {:?}", e);
             }
-            
+
             // Allow time to flush
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
@@ -203,12 +203,18 @@ async fn main() -> anyhow::Result<()> {
                 }
                 hypercore_rs::cli::StudioAction::Train => {
                     // Default to Qwen base model for scaffolding
-                    if let Err(e) = hypercore_rs::studio::finetune::train_lora("qwen2.5-0.5b-instruct-q5_k_m.gguf", "hypercore_dataset.jsonl") {
+                    if let Err(e) = hypercore_rs::studio::finetune::train_lora(
+                        "qwen2.5-0.5b-instruct-q5_k_m.gguf",
+                        "hypercore_dataset.jsonl",
+                    ) {
                         error!("LoRA Trainer Error: {:?}", e);
                     }
                 }
                 hypercore_rs::cli::StudioAction::Create => {
-                    if let Err(e) = hypercore_rs::studio::assistant::create_assistant("CompanyGPT", "qwen2.5-0.5b-instruct-q5_k_m.gguf") {
+                    if let Err(e) = hypercore_rs::studio::assistant::create_assistant(
+                        "CompanyGPT",
+                        "qwen2.5-0.5b-instruct-q5_k_m.gguf",
+                    ) {
                         error!("Assistant Creation Error: {:?}", e);
                     }
                 }
@@ -235,7 +241,10 @@ async fn main() -> anyhow::Result<()> {
                     .map(|p| p.get() as u32)
                     .unwrap_or(4);
                 config.safe_mode = false;
-                info!("Memory synthesis: context={}, threads={}", config.context_size, config.max_threads);
+                info!(
+                    "Memory synthesis: context={}, threads={}",
+                    config.context_size, config.max_threads
+                );
                 let (tx, _handle) = boot_runtime(&config).await?;
                 Some(tx)
             } else {
@@ -250,7 +259,8 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
                 hypercore_rs::cli::MemoryAction::Show => {
-                    let store = hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?;
+                    let store =
+                        hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?;
                     let memories = store.get_memories()?;
 
                     let mut prefs = Vec::new();
@@ -269,49 +279,77 @@ async fn main() -> anyhow::Result<()> {
                     }
 
                     println!("\nPreferences\n-----------");
-                    for p in prefs { println!("- {}", p); }
-                    
+                    for p in prefs {
+                        println!("- {}", p);
+                    }
+
                     println!("\nRecent Decisions\n----------------");
-                    for d in decisions { println!("- {}", d); }
-                    
+                    for d in decisions {
+                        println!("- {}", d);
+                    }
+
                     println!("\nActive Projects\n---------------");
-                    for p in projects { println!("- {}", p); }
-                    
+                    for p in projects {
+                        println!("- {}", p);
+                    }
+
                     println!("\nRelationships\n-------------");
-                    for r in rels { println!("- {}", r); }
+                    for r in rels {
+                        println!("- {}", r);
+                    }
                     println!();
                 }
                 hypercore_rs::cli::MemoryAction::Timeline => {
-                    let store = std::sync::Arc::new(hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?);
-                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(store, request_tx);
+                    let store = std::sync::Arc::new(
+                        hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?,
+                    );
+                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(
+                        store, request_tx,
+                    );
                     if let Err(e) = intel.generate_timeline() {
                         error!("Timeline Error: {:?}", e);
                     }
                 }
                 hypercore_rs::cli::MemoryAction::Recall { topic } => {
-                    let store = std::sync::Arc::new(hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?);
-                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(store, request_tx);
+                    let store = std::sync::Arc::new(
+                        hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?,
+                    );
+                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(
+                        store, request_tx,
+                    );
                     if let Err(e) = intel.recall_decision(&topic).await {
                         error!("Recall Error: {:?}", e);
                     }
                 }
                 hypercore_rs::cli::MemoryAction::Patterns => {
-                    let store = std::sync::Arc::new(hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?);
-                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(store, request_tx);
+                    let store = std::sync::Arc::new(
+                        hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?,
+                    );
+                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(
+                        store, request_tx,
+                    );
                     if let Err(e) = intel.discover_patterns().await {
                         error!("Patterns Error: {:?}", e);
                     }
                 }
                 hypercore_rs::cli::MemoryAction::Explain => {
-                    let store = std::sync::Arc::new(hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?);
-                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(store, request_tx);
+                    let store = std::sync::Arc::new(
+                        hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?,
+                    );
+                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(
+                        store, request_tx,
+                    );
                     if let Err(e) = intel.explain().await {
                         error!("Explain Error: {:?}", e);
                     }
                 }
                 hypercore_rs::cli::MemoryAction::Insight => {
-                    let store = std::sync::Arc::new(hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?);
-                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(store, request_tx);
+                    let store = std::sync::Arc::new(
+                        hypercore_rs::knowledge::store::SqliteStore::new("hypercore_knowledge.db")?,
+                    );
+                    let intel = hypercore_rs::knowledge::intelligence::IntelligenceEngine::new(
+                        store, request_tx,
+                    );
                     if let Err(e) = intel.insight().await {
                         error!("Insight Error: {:?}", e);
                     }

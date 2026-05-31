@@ -1,4 +1,4 @@
-use fastembed::{TextEmbedding, InitOptions, EmbeddingModel};
+use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
 
 pub struct Embedder {
     model: TextEmbedding,
@@ -7,8 +7,7 @@ pub struct Embedder {
 impl Embedder {
     pub fn new() -> anyhow::Result<Self> {
         let model = TextEmbedding::try_new(
-            InitOptions::new(EmbeddingModel::AllMiniLML6V2)
-                .with_show_download_progress(true)
+            InitOptions::new(EmbeddingModel::AllMiniLML6V2).with_show_download_progress(true),
         )?;
         Ok(Self { model })
     }

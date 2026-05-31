@@ -13,7 +13,11 @@ pub async fn run_ask(
 
     // 1. Embed Query
     let mut embedder = Embedder::new()?;
-    let query_embedding = embedder.embed(vec![query.clone()])?.into_iter().next().unwrap();
+    let query_embedding = embedder
+        .embed(vec![query.clone()])?
+        .into_iter()
+        .next()
+        .unwrap();
 
     // 2. Retrieve Context
     let store = SqliteStore::new("hypercore_knowledge.db")?;
@@ -34,7 +38,13 @@ pub async fn run_ask(
     let mut sources_output = String::new();
     for (i, res) in results.iter().enumerate() {
         context_text.push_str(&format!("--- Document [{}] ---\n{}\n", i + 1, res.text));
-        sources_output.push_str(&format!("{}. {} (chars {}-{})\n", i + 1, res.doc_path, res.start_offset, res.end_offset));
+        sources_output.push_str(&format!(
+            "{}. {} (chars {}-{})\n",
+            i + 1,
+            res.doc_path,
+            res.start_offset,
+            res.end_offset
+        ));
     }
 
     let augmented_prompt = format!(
@@ -53,7 +63,7 @@ pub async fn run_ask(
 
     // 4. Run Inference (re-using chat scaffolding)
     let (response_tx, mut response_rx) = tokio::sync::mpsc::channel(100);
-    
+
     let req = InferenceRequest {
         request_id: uuid::Uuid::new_v4().to_string(),
         prompt: augmented_prompt,
@@ -71,7 +81,7 @@ pub async fn run_ask(
     // Stream response
     print!("> ");
     std::io::stdout().flush()?;
-    
+
     while let Some(msg) = response_rx.recv().await {
         match msg {
             Ok(crate::engine::llama::InferenceResponse::Token(token)) => {

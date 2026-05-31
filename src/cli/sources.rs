@@ -6,7 +6,11 @@ pub fn run_sources(query: String) -> anyhow::Result<()> {
     info!("Querying sources for: \"{}\"", query);
 
     let mut embedder = Embedder::new()?;
-    let query_embedding = embedder.embed(vec![query.clone()])?.into_iter().next().unwrap();
+    let query_embedding = embedder
+        .embed(vec![query.clone()])?
+        .into_iter()
+        .next()
+        .unwrap();
 
     let store = SqliteStore::new("hypercore_knowledge.db")?;
     // Get up to top 10 for sources
@@ -19,7 +23,14 @@ pub fn run_sources(query: String) -> anyhow::Result<()> {
 
     println!("Retrieved Sources:");
     for (i, res) in results.iter().enumerate() {
-        println!("{}. {} (chars {}-{}) [score={:.2}]", i + 1, res.doc_path, res.start_offset, res.end_offset, res.score);
+        println!(
+            "{}. {} (chars {}-{}) [score={:.2}]",
+            i + 1,
+            res.doc_path,
+            res.start_offset,
+            res.end_offset,
+            res.score
+        );
     }
 
     Ok(())

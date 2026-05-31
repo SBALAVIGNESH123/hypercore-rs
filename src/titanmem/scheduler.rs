@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::titanmem::types::*;
+use std::collections::HashMap;
 
 pub struct SessionManager {
     sessions: HashMap<SessionId, SessionMetadata>,

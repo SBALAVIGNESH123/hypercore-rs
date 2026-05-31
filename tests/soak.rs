@@ -23,6 +23,10 @@ async fn boot_soak_engine() -> (
         state_rx.clone(),
         metrics_tx.clone(),
         request_rx,
+        hypercore_rs::titanmem::KvModelConfig::default(),
+        512 * 1024 * 1024,
+        false,
+        None,
     );
 
     tokio::task::spawn_blocking(move || {

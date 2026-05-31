@@ -43,8 +43,8 @@ pub fn run_evaluation(manifests: Vec<String>) -> anyhow::Result<()> {
     }
 
     // Load the benchmark questions
-    let benchmark_content = std::fs::read_to_string("benchmarks/personal_ai.json")
-        .unwrap_or_else(|_| "[]".to_string());
+    let benchmark_content =
+        std::fs::read_to_string("benchmarks/personal_ai.json").unwrap_or_else(|_| "[]".to_string());
     let questions: Vec<BenchmarkQuestion> = serde_json::from_str(&benchmark_content)?;
     let total_questions = questions.len() as u32;
 
@@ -53,7 +53,10 @@ pub fn run_evaluation(manifests: Vec<String>) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    info!("Loaded {} benchmark questions. Running real retrieval evaluation...", total_questions);
+    info!(
+        "Loaded {} benchmark questions. Running real retrieval evaluation...",
+        total_questions
+    );
 
     // Initialize real retrieval infrastructure
     let store = SqliteStore::new("hypercore_knowledge.db")?;
@@ -64,11 +67,19 @@ pub fn run_evaluation(manifests: Vec<String>) -> anyhow::Result<()> {
     let mut total_score = 0.0f64;
 
     for (i, q) in questions.iter().enumerate() {
-        info!("  [{}/{}] Evaluating: {}", i + 1, total_questions, q.question);
+        info!(
+            "  [{}/{}] Evaluating: {}",
+            i + 1,
+            total_questions,
+            q.question
+        );
 
         // Embed the question
-        let query_embedding = embedder.embed(vec![q.question.clone()])?
-            .into_iter().next().unwrap();
+        let query_embedding = embedder
+            .embed(vec![q.question.clone()])?
+            .into_iter()
+            .next()
+            .unwrap();
 
         // Search the real knowledge store
         let search_results = store.search(&query_embedding, 3)?;
@@ -80,7 +91,8 @@ pub fn run_evaluation(manifests: Vec<String>) -> anyhow::Result<()> {
         };
 
         // Check theme overlap: do any expected themes appear in the retrieved text?
-        let retrieved_text: String = search_results.iter()
+        let retrieved_text: String = search_results
+            .iter()
             .map(|r| r.text.to_lowercase())
             .collect::<Vec<_>>()
             .join(" ");
@@ -93,7 +105,9 @@ pub fn run_evaluation(manifests: Vec<String>) -> anyhow::Result<()> {
         }
 
         let hit = !themes_found.is_empty();
-        if hit { total_hits += 1; }
+        if hit {
+            total_hits += 1;
+        }
         total_score += top_score;
 
         results.push(QuestionResult {
@@ -108,11 +122,15 @@ pub fn run_evaluation(manifests: Vec<String>) -> anyhow::Result<()> {
 
     let retrieval_accuracy = if total_questions > 0 {
         total_hits as f64 / total_questions as f64
-    } else { 0.0 };
+    } else {
+        0.0
+    };
 
     let avg_top_score = if total_questions > 0 {
         total_score / total_questions as f64
-    } else { 0.0 };
+    } else {
+        0.0
+    };
 
     let primary_manifest = &manifests[0];
 
@@ -131,15 +149,23 @@ pub fn run_evaluation(manifests: Vec<String>) -> anyhow::Result<()> {
     println!("\nEval Results: {}", primary_manifest);
     println!("============================================================");
     println!("  Questions:          {}", report.total_questions);
-    println!("  Retrieval Hits:     {} / {}", report.retrieval_hits, report.total_questions);
-    println!("  Retrieval Accuracy: {:.1}%", report.retrieval_accuracy * 100.0);
+    println!(
+        "  Retrieval Hits:     {} / {}",
+        report.retrieval_hits, report.total_questions
+    );
+    println!(
+        "  Retrieval Accuracy: {:.1}%",
+        report.retrieval_accuracy * 100.0
+    );
     println!("  Avg Top Score:      {:.4}", report.avg_top_score);
     println!("============================================================");
 
     for qr in &report.question_results {
         let status = if qr.hit { "✓" } else { "✗" };
-        println!("  {} {} (score: {:.3}, themes: {:?})",
-            status, qr.question, qr.top_score, qr.themes_found);
+        println!(
+            "  {} {} (score: {:.3}, themes: {:?})",
+            status, qr.question, qr.top_score, qr.themes_found
+        );
     }
 
     // Save JSON report

@@ -1,21 +1,21 @@
-use hypercore_rs::knowledge::store::SqliteStore;
-use hypercore_rs::knowledge::{VectorStore, route_query, RetrievalEngine};
 use hypercore_rs::knowledge::embed::Embedder;
+use hypercore_rs::knowledge::store::SqliteStore;
+use hypercore_rs::knowledge::{route_query, RetrievalEngine, VectorStore};
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::env;
+use std::collections::{HashMap, HashSet};
+
 use std::time::Instant;
-use std::collections::{HashSet, HashMap};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct FidelityEval {
     correctness: u8,
     grounded_in_context: u8,
     correct_file_cited: u8,
-    completeness_score: u8, // 0-2
+    completeness_score: u8,     // 0-2
     hallucination_flag: String, // "Y" / "N"
-    citation_accuracy: u8, // 0/1
+    citation_accuracy: u8,      // 0/1
     failure_type: String, // "none", "retrieval", "context_assembly", "reasoning", "hallucination"
 }
 
@@ -32,7 +32,7 @@ struct QaResult {
 fn call_local_llm(prompt: &str) -> anyhow::Result<(String, Option<FidelityEval>)> {
     let client = Client::new();
     let url = "http://localhost:8080/v1/chat/completions";
-    
+
     let sys_prompt = r#"You are a strict systems evaluator grading a RAG pipeline.
 Given the question and context, first write an answer based STRICTLY on the context.
 If the context lacks the answer, say "Insufficient context."
@@ -58,13 +58,14 @@ Then, on the final lines of your response, output a JSON object EXACTLY matching
         "max_tokens": 1024
     });
 
-    let res = client.post(url)
+    let res = client
+        .post(url)
         .header("Content-Type", "application/json")
         .json(&body)
         .send()?;
 
     let json_resp: serde_json::Value = res.json()?;
-    
+
     if let Some(text) = json_resp["choices"][0]["message"]["content"].as_str() {
         // Robust JSON extraction: find the last '{' and last '}'
         let mut eval = None;
@@ -92,17 +93,35 @@ fn main() -> anyhow::Result<()> {
     // Tuple of (Question, Type)
     let questions = vec![
         ("Where is KV cache allocated?", "architecture"),
-        ("Why does llama.cpp use mmap instead of malloc?", "architecture"),
+        (
+            "Why does llama.cpp use mmap instead of malloc?",
+            "architecture",
+        ),
         ("Where is attention computed?", "architecture"),
-        ("How is quantization implemented for Q4_0?", "semantic_reasoning"),
+        (
+            "How is quantization implemented for Q4_0?",
+            "semantic_reasoning",
+        ),
         ("Where is ggml_backend_buffer defined?", "identifier_lookup"),
         ("How does batching work?", "semantic_reasoning"),
         ("What is the CPU backend execution graph?", "architecture"),
-        ("Where is llama_model_loader implemented?", "identifier_lookup"),
+        (
+            "Where is llama_model_loader implemented?",
+            "identifier_lookup",
+        ),
         ("How are GGUF tensors loaded?", "semantic_reasoning"),
-        ("Where is ggml_compute_forward defined?", "identifier_lookup"),
-        ("Where are quantization formats defined?", "identifier_lookup"),
-        ("How is speculative decoding implemented?", "semantic_reasoning"),
+        (
+            "Where is ggml_compute_forward defined?",
+            "identifier_lookup",
+        ),
+        (
+            "Where are quantization formats defined?",
+            "identifier_lookup",
+        ),
+        (
+            "How is speculative decoding implemented?",
+            "semantic_reasoning",
+        ),
         ("Where is llama_decode implemented?", "identifier_lookup"),
         ("How do we pass prompt tokens to the model?", "architecture"),
         ("Where is the runtime builder?", "identifier_lookup"),
@@ -113,75 +132,102 @@ fn main() -> anyhow::Result<()> {
         ("Where is tensor data stored in memory?", "architecture"),
         ("How does llama_get_logits work?", "semantic_reasoning"),
         ("Where is ggml_mul_mat implemented?", "identifier_lookup"),
-        ("Explain how RoPE (Rotary Positional Embedding) is calculated.", "semantic_reasoning"),
-        ("Where is the vocab tokenizer implemented?", "identifier_lookup"),
-        ("How is thread synchronization handled in ggml?", "semantic_reasoning"),
+        (
+            "Explain how RoPE (Rotary Positional Embedding) is calculated.",
+            "semantic_reasoning",
+        ),
+        (
+            "Where is the vocab tokenizer implemented?",
+            "identifier_lookup",
+        ),
+        (
+            "How is thread synchronization handled in ggml?",
+            "semantic_reasoning",
+        ),
         ("What does ggml_gallocr do?", "architecture"),
-        ("Where is the context size defined in llama.cpp?", "identifier_lookup"),
+        (
+            "Where is the context size defined in llama.cpp?",
+            "identifier_lookup",
+        ),
         ("How do metal backend shaders work?", "semantic_reasoning"),
         ("Where is grammar parsing implemented?", "identifier_lookup"),
-        ("What is the role of llama_kv_cache_view?", "architecture")
+        ("What is the role of llama_kv_cache_view?", "architecture"),
     ];
 
     let mut results = Vec::new();
     let mut agg_stats: HashMap<String, (usize, usize)> = HashMap::new(); // Type -> (total, correct)
 
     println!("Starting Fidelity QA Evaluation Loop v2...");
-    
+
     for (i, (q, q_type)) in questions.iter().enumerate() {
         println!("\n[{}/{}] {} [{}]", i + 1, questions.len(), q, q_type);
         let start = Instant::now();
-        
+
         // 1. Retrieve FTS Results
         let fts_hits = store.fts_search(q, 10).unwrap_or_default();
-        
+
         // 2. Retrieve Vector Results
         let emb = embedder.embed(vec![q.to_string()])?;
         let vector_hits = store.search(&emb[0], 20).unwrap_or_default();
-        
+
         // 3. Assemble and Deduplicate
         use hypercore_rs::knowledge::SearchResult;
         let mut assembled_context: Vec<SearchResult> = Vec::new();
         let mut seen_chunks = HashSet::new();
         let mut file_counts = HashMap::new();
-        
+
         let mut add_chunk = |hit: SearchResult| {
-            if assembled_context.len() >= 10 { return; }
+            if assembled_context.len() >= 10 {
+                return;
+            }
             let key = format!("{}:{}", hit.doc_path, hit.start_offset);
-            if seen_chunks.contains(&key) { return; }
-            
+            if seen_chunks.contains(&key) {
+                return;
+            }
+
             let count = file_counts.entry(hit.doc_path.clone()).or_insert(0);
-            if *count >= 3 { return; } 
-            
+            if *count >= 3 {
+                return;
+            }
+
             *count += 1;
             seen_chunks.insert(key);
             assembled_context.push(hit);
         };
-        
+
         let engine = route_query(q);
         let engine_str = match engine {
             RetrievalEngine::FTS => "FTS",
             RetrievalEngine::Vector => "Vector",
         };
 
-        for hit in fts_hits { add_chunk(hit); }
-        for hit in vector_hits { add_chunk(hit); }
-        
+        for hit in fts_hits {
+            add_chunk(hit);
+        }
+        for hit in vector_hits {
+            add_chunk(hit);
+        }
+
         let elapsed = start.elapsed();
-        println!("   -> Assembled {} chunks (took {}ms) [Routed: {}]", assembled_context.len(), elapsed.as_millis(), engine_str);
-        
+        println!(
+            "   -> Assembled {} chunks (took {}ms) [Routed: {}]",
+            assembled_context.len(),
+            elapsed.as_millis(),
+            engine_str
+        );
+
         let mut context_files = Vec::new();
         let mut context_text = String::new();
-        
+
         for res in assembled_context.iter() {
             context_files.push(res.doc_path.clone());
             context_text.push_str(&format!("--- FILE: {} ---\n{}\n\n", res.doc_path, res.text));
         }
-        
+
         let prompt = format!("Question: {}\n\nContext:\n{}", q, context_text);
-        let mut generated_answer = String::new();
+        let generated_answer;
         let mut evaluation = None;
-        
+
         match call_local_llm(&prompt) {
             Ok((ans, eval)) => {
                 generated_answer = ans;
@@ -189,7 +235,7 @@ fn main() -> anyhow::Result<()> {
                 if let Some(e) = &evaluation {
                     println!("   -> Evaluated: Score={}/2, Correct={}, Grounded={}, Hallucinated={}, Failure={}", 
                         e.completeness_score, e.correctness, e.grounded_in_context, e.hallucination_flag, e.failure_type);
-                    
+
                     let entry = agg_stats.entry(q_type.to_string()).or_insert((0, 0));
                     entry.0 += 1;
                     if e.correctness == 1 && e.hallucination_flag == "N" {
@@ -198,7 +244,7 @@ fn main() -> anyhow::Result<()> {
                 } else {
                     println!("   -> Answer generated, but failed to parse eval JSON.");
                 }
-            },
+            }
             Err(e) => {
                 generated_answer = format!("API Error: {}", e);
                 println!("   -> Failed to generate answer: {}", e);
@@ -217,12 +263,18 @@ fn main() -> anyhow::Result<()> {
 
     let report_path = "qa_fidelity_report_v2.json";
     std::fs::write(report_path, serde_json::to_string_pretty(&results)?)?;
-    
+
     println!("\n=== AGGREGATE RESULTS ===");
     for (q_type, (total, correct)) in agg_stats.iter() {
-        println!("{}: {}/{} correct ({:.1}%)", q_type, correct, total, (*correct as f64 / *total as f64) * 100.0);
+        println!(
+            "{}: {}/{} correct ({:.1}%)",
+            q_type,
+            correct,
+            total,
+            (*correct as f64 / *total as f64) * 100.0
+        );
     }
-    
+
     println!("\nBenchmark complete. Saved report to {}", report_path);
 
     Ok(())

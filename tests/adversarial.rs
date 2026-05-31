@@ -21,6 +21,10 @@ async fn boot_test_server() -> u16 {
         state_rx,
         metrics_tx,
         request_rx,
+        hypercore_rs::titanmem::KvModelConfig::default(),
+        512 * 1024 * 1024,
+        false,
+        None,
     );
 
     tokio::task::spawn_blocking(move || {

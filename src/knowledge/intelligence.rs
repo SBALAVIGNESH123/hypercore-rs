@@ -1,5 +1,6 @@
 use crate::engine::llama::{InferenceRequest, InferenceResponse};
 use crate::knowledge::store::SqliteStore;
+use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -18,7 +19,10 @@ pub struct IntelligenceEngine {
 }
 
 impl IntelligenceEngine {
-    pub fn new(store: Arc<SqliteStore>, request_tx: Option<mpsc::Sender<InferenceRequest>>) -> Self {
+    pub fn new(
+        store: Arc<SqliteStore>,
+        request_tx: Option<mpsc::Sender<InferenceRequest>>,
+    ) -> Self {
         Self { store, request_tx }
     }
 
@@ -98,9 +102,7 @@ impl IntelligenceEngine {
 
         if let Some(tx) = &self.request_tx {
             // Compress evidence into short bullet points
-            let evidence: Vec<String> = matches.iter()
-                .map(|m| truncate(m, 80))
-                .collect();
+            let evidence: Vec<String> = matches.iter().map(|m| truncate(m, 80)).collect();
             let evidence_text = evidence.join("\n");
 
             let prompt = format!(
@@ -115,7 +117,9 @@ impl IntelligenceEngine {
 
         println!("\n  ──────────────────────────────────────────\n");
         let rating = Self::prompt_insight_feedback();
-        let _ = self.store.insert_feedback("recall", &matches.join(" | "), rating);
+        let _ = self
+            .store
+            .insert_feedback("recall", &matches.join(" | "), rating);
         Ok(())
     }
 
@@ -152,12 +156,18 @@ impl IntelligenceEngine {
             println!("    {:50} {}", truncate(source, 50), count);
         }
 
-        println!("\n  Total: {} memories, {} sources", memories.len(), sources_sorted.len());
+        println!(
+            "\n  Total: {} memories, {} sources",
+            memories.len(),
+            sources_sorted.len()
+        );
 
         if let Some(tx) = &self.request_tx {
             // Compress: cluster by category, summarize each cluster
             let compressed = self.compress_memories(&memories);
-            let themes = freq_sorted.iter().take(5)
+            let themes = freq_sorted
+                .iter()
+                .take(5)
                 .map(|(w, c)| format!("{} ({}x)", w, c))
                 .collect::<Vec<_>>()
                 .join(", ");
@@ -174,7 +184,9 @@ impl IntelligenceEngine {
 
         println!("\n  ──────────────────────────────────────────\n");
         let rating = Self::prompt_insight_feedback();
-        let _ = self.store.insert_feedback("patterns", &format!("{} memories", memories.len()), rating);
+        let _ =
+            self.store
+                .insert_feedback("patterns", &format!("{} memories", memories.len()), rating);
         Ok(())
     }
 
@@ -202,7 +214,13 @@ impl IntelligenceEngine {
         if !freq_sorted.is_empty() {
             println!("\n  🧬 Decision DNA:");
             for (i, (word, count)) in freq_sorted.iter().take(5).enumerate() {
-                let conf = if *count >= 5 { "High" } else if *count >= 3 { "Med" } else { "Low" };
+                let conf = if *count >= 5 {
+                    "High"
+                } else if *count >= 3 {
+                    "Med"
+                } else {
+                    "Low"
+                };
                 println!("    {}. {} ({}x, {})", i + 1, word, count, conf);
             }
         }
@@ -227,7 +245,9 @@ impl IntelligenceEngine {
 
         println!("\n  ──────────────────────────────────────────\n");
         let rating = Self::prompt_insight_feedback();
-        let _ = self.store.insert_feedback("explain", &format!("{} memories", total), rating);
+        let _ = self
+            .store
+            .insert_feedback("explain", &format!("{} memories", total), rating);
         Ok(())
     }
 
@@ -252,7 +272,7 @@ impl IntelligenceEngine {
             *source_counts.entry(source.clone()).or_insert(0) += 1;
         }
         let mut sources: Vec<_> = source_counts.into_iter().collect();
-        sources.sort_by(|a, b| b.1.cmp(&a.1));
+        sources.sort_by_key(|b| Reverse(b.1));
 
         println!("\n  📈 {} memories across {} sources", total, sources.len());
 
@@ -279,7 +299,9 @@ impl IntelligenceEngine {
 
         println!("\n  ──────────────────────────────────────────\n");
         let rating = Self::prompt_insight_feedback();
-        let _ = self.store.insert_feedback("insight", &format!("weekly, {} memories", total), rating);
+        let _ =
+            self.store
+                .insert_feedback("insight", &format!("weekly, {} memories", total), rating);
         Ok(())
     }
 
@@ -290,7 +312,10 @@ impl IntelligenceEngine {
     fn compress_memories(&self, memories: &[(String, String)]) -> String {
         let mut clusters: HashMap<String, Vec<String>> = HashMap::new();
         for (cat, content) in memories {
-            clusters.entry(cat.clone()).or_default().push(truncate(content, 60));
+            clusters
+                .entry(cat.clone())
+                .or_default()
+                .push(truncate(content, 60));
         }
 
         let mut summary_parts = Vec::new();
@@ -300,7 +325,9 @@ impl IntelligenceEngine {
             let examples: Vec<&str> = items.iter().take(3).map(|s| s.as_str()).collect();
             summary_parts.push(format!(
                 "{} ({} total): {}",
-                cat, count, examples.join("; ")
+                cat,
+                count,
+                examples.join("; ")
             ));
         }
 
@@ -327,7 +354,11 @@ impl IntelligenceEngine {
     }
 
     /// Sends a prompt through the LlamaEngine with proper timeout.
-    async fn synthesize(&self, request_tx: &mpsc::Sender<InferenceRequest>, prompt: &str) -> anyhow::Result<()> {
+    async fn synthesize(
+        &self,
+        request_tx: &mpsc::Sender<InferenceRequest>,
+        prompt: &str,
+    ) -> anyhow::Result<()> {
         use std::io::Write;
 
         let est_tokens = prompt.len() / CHARS_PER_TOKEN;
@@ -377,7 +408,11 @@ impl IntelligenceEngine {
 
     // ─── ANALYSIS HELPERS ──────────────────────────────────────────────
 
-    fn analyze_memories(&self, memories: &[(String, String)]) -> anyhow::Result<(
+    #[allow(clippy::type_complexity)]
+    fn analyze_memories(
+        &self,
+        memories: &[(String, String)],
+    ) -> anyhow::Result<(
         HashMap<String, usize>,
         Vec<(String, usize)>,
         Vec<(String, usize)>,
@@ -388,13 +423,12 @@ impl IntelligenceEngine {
         }
 
         let stop_words: Vec<&str> = vec![
-            "the", "a", "an", "is", "are", "was", "were", "to", "for", "of",
-            "in", "on", "at", "by", "and", "or", "but", "not", "with", "from",
-            "that", "this", "it", "as", "we", "i", "you", "be", "has", "had",
-            "have", "been", "will", "would", "can", "could", "should", "do",
-            "does", "did", "than", "so", "if", "then", "also", "into", "more",
-            "use", "using", "used", "all", "each", "its", "our", "their",
-            "new", "out", "up", "no", "when", "what", "how", "which",
+            "the", "a", "an", "is", "are", "was", "were", "to", "for", "of", "in", "on", "at",
+            "by", "and", "or", "but", "not", "with", "from", "that", "this", "it", "as", "we", "i",
+            "you", "be", "has", "had", "have", "been", "will", "would", "can", "could", "should",
+            "do", "does", "did", "than", "so", "if", "then", "also", "into", "more", "use",
+            "using", "used", "all", "each", "its", "our", "their", "new", "out", "up", "no",
+            "when", "what", "how", "which",
         ];
 
         let mut word_freq: HashMap<String, usize> = HashMap::new();
@@ -407,8 +441,9 @@ impl IntelligenceEngine {
             }
         }
 
-        let mut freq_sorted: Vec<(String, usize)> = word_freq.into_iter().filter(|(_, c)| *c > 1).collect();
-        freq_sorted.sort_by(|a, b| b.1.cmp(&a.1));
+        let mut freq_sorted: Vec<(String, usize)> =
+            word_freq.into_iter().filter(|(_, c)| *c > 1).collect();
+        freq_sorted.sort_by_key(|b| Reverse(b.1));
 
         let memories_full = self.store.get_memories_full()?;
         let mut source_counts: HashMap<String, usize> = HashMap::new();
@@ -416,13 +451,13 @@ impl IntelligenceEngine {
             *source_counts.entry(source.clone()).or_insert(0) += 1;
         }
         let mut sources_sorted: Vec<(String, usize)> = source_counts.into_iter().collect();
-        sources_sorted.sort_by(|a, b| b.1.cmp(&a.1));
+        sources_sorted.sort_by_key(|b| Reverse(b.1));
 
         Ok((cat_counts, freq_sorted, sources_sorted))
     }
 
     fn prompt_insight_feedback() -> u8 {
-        use std::io::{Write, stdin, stdout};
+        use std::io::{stdin, stdout, Write};
 
         println!("  How valuable was this insight?");
         println!("    1) Obvious");

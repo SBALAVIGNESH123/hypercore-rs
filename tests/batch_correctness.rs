@@ -43,7 +43,18 @@ async fn test_concurrent_4_session_stability() {
 
     let (req_tx, req_rx) = mpsc::channel(10);
 
-    let engine = LlamaEngine::new(fixture, 8192, 4, state_rx, metrics_tx, req_rx);
+    let engine = LlamaEngine::new(
+        fixture,
+        8192,
+        4,
+        state_rx,
+        metrics_tx,
+        req_rx,
+        hypercore_rs::titanmem::KvModelConfig::default(),
+        512 * 1024 * 1024,
+        false,
+        None,
+    );
 
     let engine_handle = std::thread::spawn(move || {
         engine.run_loop().expect("Engine panicked");
@@ -109,7 +120,18 @@ async fn test_cancellation_mid_batch() {
         latency_class: hypercore_rs::runtime::governor::LatencyClass::Compute,
     });
     let (req_tx, req_rx) = mpsc::channel(10);
-    let engine = LlamaEngine::new(fixture, 8192, 4, state_rx, metrics_tx, req_rx);
+    let engine = LlamaEngine::new(
+        fixture,
+        8192,
+        4,
+        state_rx,
+        metrics_tx,
+        req_rx,
+        hypercore_rs::titanmem::KvModelConfig::default(),
+        512 * 1024 * 1024,
+        false,
+        None,
+    );
 
     let engine_handle = std::thread::spawn(move || {
         engine.run_loop().expect("Engine panicked");
@@ -192,7 +214,18 @@ async fn test_long_run_drift() {
     });
 
     let (req_tx, req_rx) = mpsc::channel(10);
-    let engine = LlamaEngine::new(fixture, 8192, 4, state_rx, metrics_tx, req_rx);
+    let engine = LlamaEngine::new(
+        fixture,
+        8192,
+        4,
+        state_rx,
+        metrics_tx,
+        req_rx,
+        hypercore_rs::titanmem::KvModelConfig::default(),
+        512 * 1024 * 1024,
+        false,
+        None,
+    );
 
     let engine_handle = std::thread::spawn(move || {
         engine.run_loop().expect("Engine panicked");

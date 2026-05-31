@@ -1,5 +1,3 @@
-
-
 pub type SessionId = u64;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]

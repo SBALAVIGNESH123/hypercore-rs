@@ -1,11 +1,11 @@
+pub mod ask;
 pub mod bench;
 pub mod chat;
-pub mod stress;
-pub mod setup;
 pub mod ingest;
-pub mod ask;
-pub mod stats;
+pub mod setup;
 pub mod sources;
+pub mod stats;
+pub mod stress;
 
 use clap::{Parser, Subcommand};
 
@@ -85,15 +85,13 @@ pub enum Commands {
     Ask {
         #[arg(short, long)]
         model: String,
-        
+
         query: String,
     },
     /// Show stats about the local knowledge base
     Stats,
     /// View relevant file paths for a query
-    Sources {
-        query: String,
-    },
+    Sources { query: String },
     /// Manage local models
     Models {
         #[command(subcommand)]

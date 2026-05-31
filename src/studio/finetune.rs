@@ -5,9 +5,10 @@ use tracing::{info, warn};
 
 pub fn train_lora(model_path: &str, dataset_path: &str) -> anyhow::Result<()> {
     info!("Starting HyperCore Studio LoRA Trainer (Python backend)...");
-    
+
     // 1. Generate Python Training Script
-    let py_script = format!(r#"
+    let py_script = format!(
+        r#"
 import sys
 import json
 import torch
@@ -31,16 +32,17 @@ print(f"Loading model {{model_id}} for LoRA adaptation...")
 # model.save_pretrained("./my_adapter.lora")
 
 print("Training complete! Adapter saved to ./my_adapter.lora")
-"#, model = model_path, dataset = dataset_path);
+"#,
+        model = model_path,
+        dataset = dataset_path
+    );
 
     let mut file = File::create("train_lora.py")?;
     file.write_all(py_script.as_bytes())?;
 
     // 2. Execute Python Environment
     info!("Executing Python PEFT/TRL environment...");
-    let status = Command::new("python")
-        .arg("train_lora.py")
-        .status();
+    let status = Command::new("python").arg("train_lora.py").status();
 
     match status {
         Ok(s) if s.success() => {

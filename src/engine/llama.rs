@@ -59,6 +59,7 @@ pub struct LlamaEngine {
 }
 
 impl LlamaEngine {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         model_path: String,
         context_size: u32,
@@ -271,7 +272,8 @@ impl LlamaEngine {
                         }
 
                         let prompt_len = tokens.len();
-                        self.kv_controller.on_kv_allocate(req.session_id as u64, prompt_len * 100);
+                        self.kv_controller
+                            .on_kv_allocate(req.session_id as u64, prompt_len * 100);
 
                         active_requests.push(ActiveRequest {
                             _kv_guard: InvariantGuard::acquire_kv_cache(req.session_id as u64),
@@ -337,9 +339,12 @@ impl LlamaEngine {
             let mut batch_indices = Vec::new();
 
             // Phase A: Precompute Scheduling Decision
-            let active_ids: Vec<u64> = active_requests.iter().map(|ar| ar.req.session_id as u64).collect();
+            let active_ids: Vec<u64> = active_requests
+                .iter()
+                .map(|ar| ar.req.session_id as u64)
+                .collect();
             let schedule = self.kv_controller.get_schedule(&active_ids);
-            
+
             // Log Snapshot
             let snapshot = self.kv_controller.get_snapshot(active_requests.len());
             tracing::info!("SchedulerSnapshot: {:?}", snapshot);
@@ -358,7 +363,10 @@ impl LlamaEngine {
                     }
 
                     if !schedule.allowed.contains(&(ar.req.session_id as u64)) {
-                        tracing::debug!("[Session {}] Throttled by TitanMem Schedule.", ar.req.session_id);
+                        tracing::debug!(
+                            "[Session {}] Throttled by TitanMem Schedule.",
+                            ar.req.session_id
+                        );
                         continue;
                     }
 
@@ -479,7 +487,11 @@ impl LlamaEngine {
                         }
 
                         ar.pending_tokens.push(next_token);
-                        self.kv_controller.on_kv_extend(ar.req.session_id as u64, 1, KvPhase::Decode);
+                        self.kv_controller.on_kv_extend(
+                            ar.req.session_id as u64,
+                            1,
+                            KvPhase::Decode,
+                        );
 
                         let token_bytes = model
                             .token_to_piece_bytes(next_token, 64, false, None)

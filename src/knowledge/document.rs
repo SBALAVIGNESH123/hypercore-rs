@@ -9,7 +9,9 @@ pub struct RawChunk {
 }
 
 pub fn is_supported(entry: &DirEntry) -> Option<String> {
-    let extensions = ["txt", "md", "rs", "py", "js", "ts", "json", "yaml", "c", "cpp", "h", "hpp", "cu", "cuh"];
+    let extensions = [
+        "txt", "md", "rs", "py", "js", "ts", "json", "yaml", "c", "cpp", "h", "hpp", "cu", "cuh",
+    ];
     if entry.file_type().is_file() {
         if let Some(ext) = entry.path().extension() {
             if let Some(ext_str) = ext.to_str() {
@@ -23,7 +25,12 @@ pub fn is_supported(entry: &DirEntry) -> Option<String> {
 }
 
 // Old sliding window fallback
-pub fn chunk_text_fallback(text: &str, chunk_size: usize, overlap: usize, file_extension: &str) -> Vec<RawChunk> {
+pub fn chunk_text_fallback(
+    text: &str,
+    chunk_size: usize,
+    overlap: usize,
+    file_extension: &str,
+) -> Vec<RawChunk> {
     let mut chunks = Vec::new();
     let chars: Vec<char> = text.chars().collect();
     let mut i = 0;
@@ -48,7 +55,13 @@ pub fn chunk_text_fallback(text: &str, chunk_size: usize, overlap: usize, file_e
     chunks
 }
 
-pub fn chunk_text(text: &str, file_path: &str, chunk_size: usize, overlap: usize, file_extension: &str) -> Vec<RawChunk> {
+pub fn chunk_text(
+    text: &str,
+    file_path: &str,
+    chunk_size: usize,
+    overlap: usize,
+    file_extension: &str,
+) -> Vec<RawChunk> {
     let mut parser = tree_sitter::Parser::new();
     let language = match file_extension {
         "c" | "h" => tree_sitter_c::language(),
@@ -56,7 +69,7 @@ pub fn chunk_text(text: &str, file_path: &str, chunk_size: usize, overlap: usize
         _ => return chunk_text_fallback(text, chunk_size, overlap, file_extension),
     };
 
-    if parser.set_language(&language.into()).is_err() {
+    if parser.set_language(&language).is_err() {
         return chunk_text_fallback(text, chunk_size, overlap, file_extension);
     }
 
@@ -68,11 +81,14 @@ pub fn chunk_text(text: &str, file_path: &str, chunk_size: usize, overlap: usize
 
     let mut chunks = Vec::new();
     let mut cursor = tree.walk();
-    let mut chunk_index = 0;
+
     let mut function_nodes = Vec::new();
 
     // Collect all function_definition nodes
-    fn traverse<'a>(cursor: &mut tree_sitter::TreeCursor<'a>, function_nodes: &mut Vec<tree_sitter::Node<'a>>) {
+    fn traverse<'a>(
+        cursor: &mut tree_sitter::TreeCursor<'a>,
+        function_nodes: &mut Vec<tree_sitter::Node<'a>>,
+    ) {
         let node = cursor.node();
         if node.kind() == "function_definition" {
             function_nodes.push(node);
@@ -92,17 +108,17 @@ pub fn chunk_text(text: &str, file_path: &str, chunk_size: usize, overlap: usize
         return chunk_text_fallback(text, chunk_size, overlap, file_extension);
     }
 
-    for node in function_nodes {
+    for (chunk_index, node) in function_nodes.into_iter().enumerate() {
         let start_byte = node.start_byte();
         let end_byte = node.end_byte();
         let node_text = &text[start_byte..end_byte];
-        
+
         // Truncate to signature + first 5 lines
         let lines: Vec<&str> = node_text.lines().collect();
         let mut limit = 0;
         let mut in_body = false;
         let mut truncated_text = String::new();
-        
+
         for line in lines {
             truncated_text.push_str(line);
             truncated_text.push('\n');
@@ -120,9 +136,9 @@ pub fn chunk_text(text: &str, file_path: &str, chunk_size: usize, overlap: usize
                 break;
             }
         }
-        
+
         let final_text = format!("// File: {}\n{}", file_path, truncated_text);
-        
+
         chunks.push(RawChunk {
             text: final_text,
             chunk_index,
@@ -130,8 +146,7 @@ pub fn chunk_text(text: &str, file_path: &str, chunk_size: usize, overlap: usize
             end_offset: end_byte,
             file_extension: file_extension.to_string(),
         });
-        chunk_index += 1;
     }
-    
+
     chunks
 }

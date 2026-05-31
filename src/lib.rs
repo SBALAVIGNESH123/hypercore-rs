@@ -10,7 +10,7 @@ pub mod metrics;
 pub mod runtime;
 pub mod server;
 
-pub mod ui;
-pub mod titanmem;
 pub mod knowledge;
 pub mod studio;
+pub mod titanmem;
+pub mod ui;

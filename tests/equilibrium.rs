@@ -27,6 +27,10 @@ async fn boot_test_engine() -> (
         state_rx.clone(),
         metrics_tx.clone(),
         request_rx,
+        hypercore_rs::titanmem::KvModelConfig::default(),
+        512 * 1024 * 1024,
+        false,
+        None,
     );
 
     let governor = SafetyGovernor::new(sys_rx, metrics_tx.subscribe(), state_tx);
